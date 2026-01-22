@@ -1,7 +1,7 @@
 <template>
   <section class="hero-section" role="banner" aria-labelledby="hero-title">
     <div class="hero-container">
-      <div class="hero-content">
+      <header class="hero-content">
         <!-- Animated introduction -->
         <div class="hero-intro" :class="{ 'is-visible': isVisible }">
           <h1 id="hero-title" class="hero-title">
@@ -38,7 +38,7 @@
         </div>
 
         <!-- Action buttons -->
-        <div class="hero-actions" :class="{ 'is-visible': isVisible }" :style="{ animationDelay: '1.0s' }">
+        <nav class="hero-actions" :class="{ 'is-visible': isVisible }" :style="{ animationDelay: '1.0s' }" role="navigation" aria-label="Main actions">
           <button
             class="btn btn-primary"
             @click="handleNavigateToDemos"
@@ -63,15 +63,15 @@
             <span class="btn-icon" aria-hidden="true">💬</span>
             Get in Touch
           </button>
-        </div>
+        </nav>
 
         <!-- Hidden descriptions for screen readers -->
-        <div class="sr-only">
+        <aside class="sr-only" role="complementary">
           <div id="demos-description">View interactive demonstrations of various technologies</div>
           <div id="testing-description">Explore comprehensive testing dashboard and coverage metrics</div>
           <div id="contact-description">Contact information and social links</div>
-        </div>
-      </div>
+        </aside>
+      </header>
 
       <!-- Animated background elements -->
       <div class="hero-background" aria-hidden="true">

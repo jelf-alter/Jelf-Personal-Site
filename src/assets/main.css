@@ -1,3 +1,5 @@
+@import './accessibility.css';
+
 /* Global Styles - Mobile First Approach */
 * {
   margin: 0;

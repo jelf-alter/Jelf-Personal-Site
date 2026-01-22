@@ -1,0 +1,250 @@
+/* Accessibility Utilities and Global Styles */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Skip links for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #3498db;
+  color: white;
+  padding: 8px 12px;
+  text-decoration: none;
+  border-radius: 0 0 4px 4px;
+  z-index: 9999;
+  font-weight: 600;
+  font-size: 14px;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Focus management */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  *:focus-visible {
+    outline: 3px solid;
+    outline-offset: 3px;
+  }
+  
+  .btn,
+  .base-button,
+  .nav-link,
+  .skill-card {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  /* Disable transforms that might cause motion sickness */
+  .btn:hover,
+  .base-button:hover,
+  .skill-card:hover,
+  .demo-card:hover {
+    transform: none !important;
+  }
+}
+
+/* Ensure minimum touch target sizes */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[role="link"],
+[tabindex]:not([tabindex="-1"]) {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Exception for inline elements */
+a:not(.btn):not(.base-button),
+button.inline {
+  min-height: auto;
+  min-width: auto;
+}
+
+/* Color contrast improvements */
+.text-muted {
+  color: #6c757d !important;
+}
+
+.text-light {
+  color: #495057 !important;
+}
+
+/* Ensure proper heading hierarchy */
+h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.5rem;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+
+h4 {
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+
+h5 {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+h6 {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Responsive typography */
+@media (min-width: 768px) {
+  h1 {
+    font-size: 2.5rem;
+  }
+  
+  h2 {
+    font-size: 2rem;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  h1 {
+    font-size: 3rem;
+  }
+  
+  h2 {
+    font-size: 2.25rem;
+  }
+}
+
+/* Form accessibility */
+label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+input,
+select,
+textarea {
+  border: 2px solid #e9ecef;
+  border-radius: 4px;
+  padding: 0.75rem;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+input:invalid,
+select:invalid,
+textarea:invalid {
+  border-color: #e74c3c;
+}
+
+/* Error states */
+.error {
+  color: #e74c3c;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Loading states */
+[aria-busy="true"] {
+  cursor: wait;
+}
+
+/* Live regions */
+[aria-live] {
+  /* Ensure live regions are not visually hidden */
+  position: relative !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Print styles */
+@media print {
+  .skip-link,
+  .sr-only {
+    display: none !important;
+  }
+  
+  *:focus-visible {
+    outline: none !important;
+  }
+  
+  a {
+    text-decoration: underline !important;
+  }
+  
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+}
+
+/* Dark mode support (if implemented) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --focus-color: #64b5f6;
+    --text-color: #ffffff;
+    --bg-color: #121212;
+  }
+  
+  *:focus-visible {
+    outline-color: var(--focus-color);
+  }
+}
