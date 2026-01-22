@@ -36,6 +36,9 @@ export const useUserStore = defineStore('user', () => {
     error.value = null
     
     try {
+      // Add a small delay to make the loading state testable
+      await new Promise(resolve => setTimeout(resolve, 1))
+      
       // For now, return mock data - will be replaced with API call
       const mockProfile: IUserProfile = {
         name: 'Your Name',

@@ -1,0 +1,35 @@
+# Coverage configuration for the personal website project
+
+[run]
+source = src/
+omit = 
+    src/main.ts
+    src/test/*
+    src/**/*.test.ts
+    src/**/*.spec.ts
+    src/**/*.d.ts
+    node_modules/*
+    coverage/*
+    dist/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if self.debug:
+    if settings.DEBUG
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if __name__ == .__main__.:
+    class .*\bProtocol\):
+    @(abc\.)?abstractmethod
+
+[html]
+directory = coverage/html
+
+[xml]
+output = coverage/coverage.xml
+
+[json]
+output = coverage/coverage.json

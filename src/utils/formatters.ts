@@ -110,7 +110,9 @@ export const formatNumber = (num: number): string => {
  * Truncate text to specified length with ellipsis
  */
 export const truncateText = (text: string, maxLength: number): string => {
+  if (maxLength <= 0) return ''
   if (text.length <= maxLength) return text
+  if (maxLength <= 3) return text.substring(0, maxLength)
   return text.substring(0, maxLength - 3) + '...'
 }
 
