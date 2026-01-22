@@ -92,14 +92,16 @@ app.use((req, res) => {
   });
 });
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  
-  // Initialize WebSocket server
-  webSocketService.initialize(server);
-});
+// Start server only if this file is run directly (not imported for testing)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Initialize WebSocket server
+    webSocketService.initialize(server);
+  });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
