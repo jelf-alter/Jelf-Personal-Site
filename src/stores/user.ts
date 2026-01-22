@@ -41,10 +41,10 @@ export const useUserStore = defineStore('user', () => {
       
       // For now, return mock data - will be replaced with API call
       const mockProfile: IUserProfile = {
-        name: 'Your Name',
+        name: 'Dan Jelf',
         title: 'Backend Developer',
-        email: 'your.email@example.com',
-        location: 'Your Location',
+        email: 'dan.jelf@hotmail.com',
+        location: 'Herndon, VA',
         summary: 'Passionate backend developer with expertise in modern web technologies and testing practices.',
         skills: [
           {

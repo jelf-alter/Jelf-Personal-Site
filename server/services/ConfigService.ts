@@ -2,10 +2,10 @@ import { IUserProfile, IAppConfig, IDemoConfig, ITestingConfig } from '../types/
 
 export class ConfigService {
   private userProfile: IUserProfile = {
-    name: 'Your Name',
+    name: 'Dan Jelf',
     title: 'Full Stack Developer',
-    email: 'your.email@example.com',
-    location: 'Your Location',
+    email: 'dan.jelf@hotmail.com',
+    location: 'Herndon, VA',
     summary: 'Experienced developer specializing in modern web technologies and data processing solutions.',
     skills: [
       { name: 'TypeScript', level: 90, category: 'Programming Languages' },
@@ -48,7 +48,7 @@ export class ConfigService {
       targetCLS: 0.1,
     },
     contact: {
-      email: 'your.email@example.com',
+      email: 'dan.jelf@hotmail.com',
       github: 'https://github.com/your-username',
       linkedin: 'https://linkedin.com/in/your-profile',
     },

@@ -30,7 +30,7 @@ describe('User Store', () => {
       expect(store.error).toBeNull()
       expect(store.profile).not.toBeNull()
       expect(store.isProfileLoaded).toBe(true)
-      expect(store.profile?.name).toBe('Your Name')
+      expect(store.profile?.name).toBe('Dan Jelf')
       expect(store.profile?.title).toBe('Backend Developer')
     })
 
@@ -93,7 +93,7 @@ describe('User Store', () => {
       
       expect(store.profile?.name).toBe('Updated Name')
       expect(store.profile?.title).toBe('Senior Developer')
-      expect(store.profile?.email).toBe('your.email@example.com') // Should preserve other fields
+      expect(store.profile?.email).toBe('dan.jelf@hotmail.com') // Should preserve other fields
     })
 
     it('should not update if profile is null', () => {
