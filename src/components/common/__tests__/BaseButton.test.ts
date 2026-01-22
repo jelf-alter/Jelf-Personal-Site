@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { mountComponent, triggerAndWait, testKeyboardNavigation } from '@/test/component-utils'
 import BaseButton from '../BaseButton.vue'
 
@@ -178,9 +178,6 @@ describe('BaseButton', () => {
         slots: { default: 'Button' }
       })
 
-      const button = wrapper.find('button')
-      const styles = getComputedStyle(button.element)
-      
       // Note: In a real test environment, you might need to check actual computed styles
       // This is a simplified check for the CSS class
       expect(wrapper.classes()).toContain('base-button')

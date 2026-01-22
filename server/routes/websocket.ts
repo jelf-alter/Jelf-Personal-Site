@@ -6,7 +6,7 @@ const router = Router();
 /**
  * Trigger pipeline update broadcast
  */
-router.post('/pipeline/:pipelineId/update', (req, res) => {
+router.post('/pipeline/:pipelineId/update', (req, res): void => {
   try {
     const { pipelineId } = req.params;
     const updateData = req.body;
@@ -40,7 +40,7 @@ router.post('/pipeline/:pipelineId/update', (req, res) => {
 /**
  * Trigger test update broadcast
  */
-router.post('/test/:testSuiteId/update', (req, res) => {
+router.post('/test/:testSuiteId/update', (req, res): void => {
   try {
     const { testSuiteId } = req.params;
     const updateData = req.body;

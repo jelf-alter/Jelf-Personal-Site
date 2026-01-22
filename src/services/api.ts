@@ -1,6 +1,6 @@
 import type { IApiResponse } from '@/types'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api'
 
 class ApiService {
   private async request<T>(
@@ -24,6 +24,7 @@ class ApiService {
           success: false,
           error: errorData.error || `HTTP ${response.status}: ${response.statusText}`,
           message: errorData.message,
+          timestamp: new Date()
         }
       }
 
@@ -31,11 +32,13 @@ class ApiService {
       return {
         success: true,
         data,
+        timestamp: new Date()
       }
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error occurred',
+        timestamp: new Date()
       }
     }
   }

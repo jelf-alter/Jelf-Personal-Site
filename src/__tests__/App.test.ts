@@ -31,10 +31,10 @@ describe('App.vue', () => {
     // Check navigation links
     const navLinks = wrapper.findAll('.nav-link')
     expect(navLinks).toHaveLength(4) // Updated to 4 for Home, Demos, Testing, About
-    expect(navLinks[0].text()).toBe('Home')
-    expect(navLinks[1].text()).toBe('Demos')
-    expect(navLinks[2].text()).toBe('Testing')
-    expect(navLinks[3].text()).toBe('About')
+    expect(navLinks[0].text()).toBe('🏠 Home')
+    expect(navLinks[1].text()).toBe('🚀 Demos')
+    expect(navLinks[2].text()).toBe('🧪 Testing')
+    expect(navLinks[3].text()).toBe('👤 About')
   })
 
   it('has proper footer content', async () => {

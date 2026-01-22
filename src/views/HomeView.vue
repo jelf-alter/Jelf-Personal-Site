@@ -1,127 +1,98 @@
 <template>
   <div class="home">
-    <section class="hero">
-      <h1>Welcome to My Personal Website</h1>
-      <p class="hero-subtitle">Backend Developer | Full-Stack Enthusiast | Testing Advocate</p>
-      <div class="hero-actions">
-        <RouterLink to="/demos" class="btn btn-primary">View Demos</RouterLink>
-        <RouterLink to="/testing" class="btn btn-secondary">See Testing</RouterLink>
-      </div>
-    </section>
+    <HeroSection
+      :personal-info="personalInfo"
+      @navigate-to-demos="handleNavigateToDemos"
+      @navigate-to-testing="handleNavigateToTesting"
+      @contact-clicked="handleContactClick"
+    />
 
-    <section class="skills">
-      <h2>Skills & Technologies</h2>
-      <div class="skills-grid">
-        <div class="skill-card">
-          <h3>Backend Development</h3>
-          <p>Node.js, Express, APIs, Databases</p>
-        </div>
-        <div class="skill-card">
-          <h3>Frontend Development</h3>
-          <p>Vue.js, TypeScript, Modern CSS</p>
-        </div>
-        <div class="skill-card">
-          <h3>Testing & Quality</h3>
-          <p>Unit Testing, Property-Based Testing, Coverage</p>
-        </div>
-        <div class="skill-card">
-          <h3>Data Processing</h3>
-          <p>ELT Pipelines, Data Visualization, Analytics</p>
-        </div>
-      </div>
-    </section>
+    <SkillsShowcase
+      :skills="skills"
+      :highlighted-skills="highlightedSkills"
+      @skill-hovered="handleSkillHover"
+      @skill-clicked="handleSkillClick"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import HeroSection from '@/components/landing/HeroSection.vue'
+import SkillsShowcase from '@/components/landing/SkillsShowcase.vue'
+import type { ISkill } from '@/types'
+
+const router = useRouter()
+const userStore = useUserStore()
+
+// Computed properties
+const personalInfo = computed(() => {
+  if (!userStore.profile) {
+    return {
+      name: 'Loading...',
+      title: 'Loading...',
+      email: '',
+      location: '',
+      summary: ''
+    }
+  }
+  
+  return {
+    name: userStore.profile.name,
+    title: userStore.profile.title,
+    email: userStore.profile.email,
+    location: userStore.profile.location,
+    summary: userStore.profile.summary
+  }
+})
+
+const skills = computed(() => userStore.profile?.skills || [])
+
+const highlightedSkills = computed(() => {
+  // Highlight skills with expert level or high experience
+  return skills.value
+    .filter(skill => skill.level === 'expert' || (skill.yearsOfExperience && skill.yearsOfExperience >= 3))
+    .map(skill => skill.id)
+})
+
+// Event handlers
+const handleNavigateToDemos = () => {
+  router.push('/demos')
+}
+
+const handleNavigateToTesting = () => {
+  router.push('/testing')
+}
+
+const handleContactClick = () => {
+  // Scroll to contact section or open contact modal
+  // For now, we'll navigate to about page
+  router.push('/about')
+}
+
+const handleSkillHover = (skill: ISkill) => {
+  // Could be used for analytics or additional interactions
+  console.log('Skill hovered:', skill.name)
+}
+
+const handleSkillClick = (skill: ISkill) => {
+  // Could navigate to detailed skill information or demos
+  console.log('Skill clicked:', skill.name)
+}
+
+// Lifecycle
+onMounted(async () => {
+  // Load user profile data
+  if (!userStore.isProfileLoaded) {
+    await userStore.loadProfile()
+  }
+})
 </script>
 
 <style scoped>
-.hero {
-  text-align: center;
-  padding: 4rem 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 8px;
-  margin-bottom: 3rem;
-}
-
-.hero h1 {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.hero-subtitle {
-  font-size: 1.2rem;
-  margin-bottom: 2rem;
-  opacity: 0.9;
-}
-
-.hero-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.btn-primary {
-  background-color: #3498db;
-  color: white;
-}
-
-.btn-secondary {
-  background-color: transparent;
-  color: white;
-  border: 2px solid white;
-}
-
-.skills {
-  margin-top: 3rem;
-}
-
-.skills h2 {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: #2c3e50;
-}
-
-.skills-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-}
-
-.skill-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-}
-
-.skill-card:hover {
-  transform: translateY(-4px);
-}
-
-.skill-card h3 {
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
-}
-
-.skill-card p {
-  color: #7f8c8d;
+.home {
+  /* Container for landing page components */
 }
 </style>
