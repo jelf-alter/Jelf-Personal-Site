@@ -1,12 +1,17 @@
 <template>
   <div id="app">
-    <NavigationHeader @menu-toggled="handleMenuToggle" @navigation-clicked="handleNavigationClick" />
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <NavigationHeader 
+      @menu-toggled="handleMenuToggle" 
+      @navigation-clicked="handleNavigationClick" 
+    />
 
-    <main>
+    <main id="main-content" role="main" tabindex="-1">
       <RouterView />
     </main>
 
-    <footer>
+    <footer role="contentinfo">
       <p>&copy; 2024 Personal Website. Built with Vue.js and TypeScript.</p>
     </footer>
   </div>
@@ -36,11 +41,33 @@ const handleNavigationClick = (path: string) => {
   flex-direction: column;
 }
 
+/* Skip link for keyboard navigation */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #3498db;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 0 0 4px 4px;
+  z-index: 9999;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
 main {
   flex: 1;
   padding: 0;
   width: 100%;
   overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+main:focus {
+  outline: none;
 }
 
 footer {

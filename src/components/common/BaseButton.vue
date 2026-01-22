@@ -3,11 +3,16 @@
     :class="buttonClasses"
     :disabled="disabled || loading"
     :type="type"
+    :aria-label="ariaLabel"
+    :aria-describedby="ariaDescribedby"
+    :aria-pressed="ariaPressed"
+    :aria-expanded="ariaExpanded"
     @click="handleClick"
+    @keydown="handleKeydown"
   >
-    <span v-if="loading" class="loading-spinner"></span>
+    <span v-if="loading" class="loading-spinner" aria-hidden="true"></span>
     <slot v-if="!loading" />
-    <span v-if="loading">{{ loadingText }}</span>
+    <span v-if="loading" class="sr-only">{{ loadingText }}</span>
   </button>
 </template>
 
@@ -22,10 +27,15 @@ interface Props {
   loadingText?: string
   type?: 'button' | 'submit' | 'reset'
   block?: boolean
+  ariaLabel?: string
+  ariaDescribedby?: string
+  ariaPressed?: boolean
+  ariaExpanded?: boolean
 }
 
 interface Emits {
   click: [event: MouseEvent]
+  keydown: [event: KeyboardEvent]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -56,6 +66,16 @@ const handleClick = (event: MouseEvent) => {
     emit('click', event)
   }
 }
+
+const handleKeydown = (event: KeyboardEvent) => {
+  // Handle Enter and Space keys for better accessibility
+  if ((event.key === 'Enter' || event.key === ' ') && !props.disabled && !props.loading) {
+    event.preventDefault()
+    emit('keydown', event)
+    // Also emit click for consistency
+    emit('click', event as any)
+  }
+}
 </script>
 
 <style scoped>
@@ -71,11 +91,29 @@ const handleClick = (event: MouseEvent) => {
   transition: all 0.2s ease;
   text-decoration: none;
   font-family: inherit;
+  min-height: 44px; /* Minimum touch target size for accessibility */
 }
 
 .base-button:focus {
+  outline: none;
+}
+
+.base-button:focus-visible {
   outline: 2px solid #3498db;
   outline-offset: 2px;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Sizes */
@@ -170,6 +208,36 @@ const handleClick = (event: MouseEvent) => {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .base-button:focus-visible {
+    outline: 3px solid;
+  }
+  
+  .base-button--primary {
+    border: 2px solid transparent;
+  }
+  
+  .base-button--secondary {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .base-button {
+    transition: none;
+  }
+  
+  .base-button:hover:not(.base-button--disabled) {
+    transform: none;
+  }
+  
+  .loading-spinner {
+    animation: none;
   }
 }
 </style>

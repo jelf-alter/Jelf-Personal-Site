@@ -1,79 +1,155 @@
 <template>
-  <div class="websocket-demo">
-    <div class="connection-status">
-      <h3>WebSocket Connection</h3>
-      <div class="status-indicator" :class="connectionStatus">
-        <span class="status-dot"></span>
+  <div class="websocket-demo" role="main" aria-labelledby="demo-title">
+    <h1 id="demo-title" class="sr-only">WebSocket Demo Application</h1>
+    
+    <section class="connection-status" aria-labelledby="connection-title">
+      <h2 id="connection-title">WebSocket Connection</h2>
+      <div 
+        class="status-indicator" 
+        :class="connectionStatus"
+        role="status"
+        :aria-label="`Connection status: ${connectionStatusText}`"
+        aria-live="polite"
+      >
+        <span class="status-dot" aria-hidden="true"></span>
         <span class="status-text">{{ connectionStatusText }}</span>
       </div>
-      <div class="connection-actions">
-        <button @click="connect" :disabled="isConnected" class="btn btn-primary">
+      <div class="connection-actions" role="group" aria-label="Connection controls">
+        <BaseButton 
+          @click="connect" 
+          :disabled="isConnected" 
+          variant="primary"
+          aria-describedby="connect-help"
+        >
           Connect
-        </button>
-        <button @click="disconnect" :disabled="!isConnected" class="btn btn-secondary">
+        </BaseButton>
+        <BaseButton 
+          @click="disconnect" 
+          :disabled="!isConnected" 
+          variant="secondary"
+          aria-describedby="disconnect-help"
+        >
           Disconnect
-        </button>
+        </BaseButton>
       </div>
-    </div>
+      <div class="sr-only">
+        <div id="connect-help">Establish WebSocket connection to the server</div>
+        <div id="disconnect-help">Close the WebSocket connection</div>
+      </div>
+    </section>
 
-    <div class="subscriptions">
-      <h3>Channel Subscriptions</h3>
-      <div class="subscription-controls">
-        <button @click="subscribe('pipeline')" class="btn btn-outline">
+    <section class="subscriptions" aria-labelledby="subscriptions-title">
+      <h2 id="subscriptions-title">Channel Subscriptions</h2>
+      <div class="subscription-controls" role="group" aria-label="Subscription controls">
+        <BaseButton 
+          @click="subscribe('pipeline')" 
+          variant="secondary"
+          :disabled="!isConnected"
+          aria-describedby="pipeline-sub-help"
+        >
           Subscribe to Pipeline Updates
-        </button>
-        <button @click="subscribe('testing')" class="btn btn-outline">
+        </BaseButton>
+        <BaseButton 
+          @click="subscribe('testing')" 
+          variant="secondary"
+          :disabled="!isConnected"
+          aria-describedby="testing-sub-help"
+        >
           Subscribe to Test Updates
-        </button>
-        <button @click="unsubscribe('pipeline')" class="btn btn-outline">
+        </BaseButton>
+        <BaseButton 
+          @click="unsubscribe('pipeline')" 
+          variant="secondary"
+          :disabled="!isConnected"
+          aria-describedby="pipeline-unsub-help"
+        >
           Unsubscribe from Pipeline
-        </button>
-        <button @click="unsubscribe('testing')" class="btn btn-outline">
+        </BaseButton>
+        <BaseButton 
+          @click="unsubscribe('testing')" 
+          variant="secondary"
+          :disabled="!isConnected"
+          aria-describedby="testing-unsub-help"
+        >
           Unsubscribe from Testing
-        </button>
+        </BaseButton>
       </div>
-    </div>
+      <div class="sr-only">
+        <div id="pipeline-sub-help">Receive real-time updates from pipeline processing</div>
+        <div id="testing-sub-help">Receive real-time updates from test execution</div>
+        <div id="pipeline-unsub-help">Stop receiving pipeline updates</div>
+        <div id="testing-unsub-help">Stop receiving test updates</div>
+      </div>
+    </section>
 
-    <div class="message-log">
-      <h3>Real-time Messages</h3>
-      <div class="message-count">
+    <section class="message-log" aria-labelledby="messages-title">
+      <h2 id="messages-title">Real-time Messages</h2>
+      <div class="message-count" aria-live="polite">
         Total messages received: {{ messages.length }}
       </div>
-      <div class="messages-container">
+      <div 
+        class="messages-container"
+        role="log"
+        aria-label="WebSocket message log"
+        aria-live="polite"
+        tabindex="0"
+      >
         <div
           v-for="message in recentMessages"
           :key="message.id || message.timestamp"
           class="message-item"
           :class="message.type"
+          role="article"
+          :aria-label="`${message.type} message received at ${formatTime(message.timestamp)}`"
         >
           <div class="message-header">
             <span class="message-type">{{ message.type }}</span>
-            <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+            <time class="message-time" :datetime="message.timestamp">
+              {{ formatTime(message.timestamp) }}
+            </time>
           </div>
           <div class="message-content">
-            <pre>{{ JSON.stringify(message.data, null, 2) }}</pre>
+            <pre :aria-label="`Message data: ${JSON.stringify(message.data)}`">{{ JSON.stringify(message.data, null, 2) }}</pre>
           </div>
         </div>
+        <div v-if="recentMessages.length === 0" class="no-messages" role="status" aria-live="polite">
+          No messages received yet. Connect and subscribe to channels to see real-time updates.
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div class="test-actions">
-      <h3>Test WebSocket Broadcasting</h3>
-      <div class="test-controls">
-        <button @click="triggerPipelineUpdate" class="btn btn-primary">
+    <section class="test-actions" aria-labelledby="test-title">
+      <h2 id="test-title">Test WebSocket Broadcasting</h2>
+      <div class="test-controls" role="group" aria-label="Test broadcast controls">
+        <BaseButton 
+          @click="triggerPipelineUpdate" 
+          variant="primary"
+          :disabled="!isConnected"
+          aria-describedby="pipeline-test-help"
+        >
           Trigger Pipeline Update
-        </button>
-        <button @click="triggerTestUpdate" class="btn btn-primary">
+        </BaseButton>
+        <BaseButton 
+          @click="triggerTestUpdate" 
+          variant="primary"
+          :disabled="!isConnected"
+          aria-describedby="test-test-help"
+        >
           Trigger Test Update
-        </button>
+        </BaseButton>
       </div>
-    </div>
+      <div class="sr-only">
+        <div id="pipeline-test-help">Send a test pipeline update message through WebSocket</div>
+        <div id="test-test-help">Send a test update message through WebSocket</div>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useWebSocket } from '../../composables/useWebSocket';
+import BaseButton from '../common/BaseButton.vue';
 import type { WebSocketMessage } from '../../services/websocket';
 
 const webSocket = useWebSocket({ autoConnect: false });
@@ -192,11 +268,37 @@ const { isConnected, connectionStatus } = webSocket;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.websocket-demo h3 {
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.websocket-demo h2 {
   margin-bottom: 1rem;
   color: #2c3e50;
   border-bottom: 2px solid #3498db;
   padding-bottom: 0.5rem;
+  font-size: 1.25rem;
+}
+
+.no-messages {
+  padding: 2rem;
+  text-align: center;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.messages-container:focus {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
 }
 
 .connection-status {

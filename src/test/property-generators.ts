@@ -23,7 +23,11 @@ export const arbString = (minLength = 1, maxLength = 50) =>
   arbSafeString(minLength, maxLength)
 
 export const arbEmail = () => 
-  fc.emailAddress()
+  fc.tuple(
+    fc.stringOf(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789'.split('')), { minLength: 1, maxLength: 20 }),
+    fc.stringOf(fc.constantFrom(...'abcdefghijklmnopqrstuvwxyz0123456789'.split('')), { minLength: 1, maxLength: 20 }),
+    fc.constantFrom('com', 'org', 'net', 'edu', 'gov')
+  ).map(([local, domain, tld]) => `${local}@${domain}.${tld}`)
 
 export const arbUrl = () => 
   fc.webUrl()

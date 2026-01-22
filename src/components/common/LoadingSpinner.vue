@@ -1,7 +1,13 @@
 <template>
-  <div :class="spinnerClasses">
-    <div class="spinner-circle"></div>
+  <div 
+    :class="spinnerClasses"
+    role="status"
+    :aria-label="ariaLabel"
+    :aria-live="ariaLive"
+  >
+    <div class="spinner-circle" aria-hidden="true"></div>
     <p v-if="message" class="spinner-message">{{ message }}</p>
+    <span class="sr-only">{{ srMessage }}</span>
   </div>
 </template>
 
@@ -12,11 +18,15 @@ interface Props {
   size?: 'small' | 'medium' | 'large'
   message?: string
   overlay?: boolean
+  ariaLabel?: string
+  ariaLive?: 'polite' | 'assertive' | 'off'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'medium',
-  overlay: false
+  overlay: false,
+  ariaLabel: 'Loading content',
+  ariaLive: 'polite'
 })
 
 const spinnerClasses = computed(() => [
@@ -26,6 +36,13 @@ const spinnerClasses = computed(() => [
     'loading-spinner--overlay': props.overlay
   }
 ])
+
+const srMessage = computed(() => {
+  if (props.message) {
+    return props.message
+  }
+  return 'Loading, please wait...'
+})
 </script>
 
 <style scoped>
@@ -76,8 +93,31 @@ const spinnerClasses = computed(() => [
   text-align: center;
 }
 
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .spinner-circle {
+    animation: none;
+    /* Show a static indicator instead */
+    border: 3px solid #ecf0f1;
+    border-left: 3px solid #3498db;
+  }
 }
 </style>
