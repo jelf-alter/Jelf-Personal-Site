@@ -29,6 +29,7 @@ const handleNavigationClick = (path: string) => {
 </script>
 
 <style scoped>
+/* Mobile First App Layout */
 #app {
   min-height: 100vh;
   display: flex;
@@ -38,6 +39,8 @@ const handleNavigationClick = (path: string) => {
 main {
   flex: 1;
   padding: 0;
+  width: 100%;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 footer {
@@ -46,12 +49,48 @@ footer {
   background-color: #ecf0f1;
   color: #7f8c8d;
   margin-top: auto;
+  font-size: 0.875rem; /* Mobile first size */
+  line-height: 1.4;
 }
 
-@media (max-width: 768px) {
+/* Small devices (576px and up) */
+@media (min-width: 576px) {
   footer {
-    padding: 0.75rem;
+    padding: 1.25rem;
     font-size: 0.9rem;
+  }
+}
+
+/* Medium devices (768px and up) */
+@media (min-width: 768px) {
+  footer {
+    padding: 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+/* Large devices (992px and up) */
+@media (min-width: 992px) {
+  footer {
+    padding: 2rem;
+  }
+}
+
+/* Ultra-wide screens (1920px and up) */
+@media (min-width: 1920px) {
+  footer {
+    padding: 2.5rem;
+    font-size: 1.1rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  footer {
+    padding: 1rem;
+    font-size: 0.8rem;
+    background-color: transparent;
+    border-top: 1px solid #ddd;
   }
 }
 </style>
