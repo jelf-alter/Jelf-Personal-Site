@@ -2,10 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { createServer } from 'http';
 import { demoRoutes } from './routes/demo.js';
 import { configRoutes } from './routes/config.js';
+import { websocketRoutes } from './routes/websocket.js';
+import { webSocketService } from './services/WebSocketService.js';
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 3001;
 
 // Security middleware
@@ -57,6 +61,19 @@ app.get('/api/health', (req, res) => {
 // API routes
 app.use('/api/demo', demoRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/ws', websocketRoutes);
+
+// WebSocket stats endpoint (legacy - now available via /api/ws/stats)
+app.get('/api/ws/stats', (req, res) => {
+  res.json(webSocketService.getStats());
+});
+
+// WebSocket history endpoint (legacy - now available via /api/ws/history/:channel)
+app.get('/api/ws/history/:channel', (req, res) => {
+  const { channel } = req.params;
+  const history = webSocketService.getHistory(channel);
+  res.json({ channel, history });
+});
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -76,9 +93,31 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Initialize WebSocket server
+  webSocketService.initialize(server);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  await webSocketService.shutdown();
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, shutting down gracefully');
+  await webSocketService.shutdown();
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });
 
 export default app;

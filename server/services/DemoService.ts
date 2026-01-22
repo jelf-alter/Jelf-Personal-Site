@@ -1,4 +1,5 @@
 import { IDemoApplication, IPipelineExecution, IDataset } from '../types/index.js';
+import { webSocketService } from './WebSocketService.js';
 
 export class DemoService {
   private demos: IDemoApplication[] = [
@@ -117,6 +118,12 @@ export class DemoService {
     const execution = this.pipelineExecutions.get(executionId);
     if (!execution) return;
 
+    // Broadcast pipeline started
+    webSocketService.broadcastPipelineUpdate(executionId, {
+      type: 'pipeline_started',
+      execution: { ...execution }
+    });
+
     // Simulate Extract step
     await this.simulateStep(executionId, 'extract', 2000);
     
@@ -135,6 +142,12 @@ export class DemoService {
       outputFormat: 'JSON',
       summary: 'Pipeline executed successfully',
     };
+
+    // Broadcast pipeline completed
+    webSocketService.broadcastPipelineUpdate(executionId, {
+      type: 'pipeline_completed',
+      execution: { ...execution }
+    });
   }
 
   private async simulateStep(executionId: string, stepId: string, duration: number): Promise<void> {
@@ -147,11 +160,25 @@ export class DemoService {
     step.status = 'running';
     step.startTime = new Date();
 
+    // Broadcast step started
+    webSocketService.broadcastPipelineUpdate(executionId, {
+      type: 'step_started',
+      step: { ...step },
+      execution: { ...execution }
+    });
+
     // Simulate progress updates
     const progressInterval = duration / 10;
     for (let i = 0; i <= 10; i++) {
       await new Promise(resolve => setTimeout(resolve, progressInterval));
       step.progress = i * 10;
+      
+      // Broadcast progress update
+      webSocketService.broadcastPipelineUpdate(executionId, {
+        type: 'progress_update',
+        step: { ...step },
+        execution: { ...execution }
+      });
     }
 
     step.status = 'completed';
@@ -170,6 +197,13 @@ export class DemoService {
         step.outputData = { recordsTransformed: 1000, transformations: ['normalize', 'validate', 'enrich'] };
         break;
     }
+
+    // Broadcast step completed
+    webSocketService.broadcastPipelineUpdate(executionId, {
+      type: 'step_completed',
+      step: { ...step },
+      execution: { ...execution }
+    });
 
     // Start next step
     const currentIndex = execution.steps.findIndex(s => s.id === stepId);
