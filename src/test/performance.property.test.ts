@@ -166,7 +166,8 @@ describe('Property 14: Performance Standards Compliance', () => {
         { path: '/', component: { template: '<div>Home</div>' } },
         { path: '/demos', component: { template: '<div>Demos</div>' } },
         { path: '/testing', component: { template: '<div>Testing</div>' } },
-        { path: '/about', component: { template: '<div>About</div>' } }
+        { path: '/about', component: { template: '<div>About</div>' } },
+        { path: '/contact', component: { template: '<div>Contact</div>' } }
       ]
     })
     
@@ -315,7 +316,7 @@ describe('Property 14: Performance Standards Compliance', () => {
           fc.record({
             id: arbSafeString(1, 10),
             label: arbSafeString(2, 20),
-            path: arbSafeString(1, 20),
+            path: fc.constantFrom('/', '/demos', '/testing', '/about', '/contact'), // Use valid routes
             icon: arbSafeString(1, 5)
           }),
           { minLength: 1, maxLength: 20 }
