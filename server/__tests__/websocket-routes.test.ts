@@ -21,6 +21,14 @@ vi.mock('../services/WebSocketService', () => ({
   }
 }));
 
+// Type the mocked service for better TypeScript support
+const mockWebSocketService = {
+  broadcastPipelineUpdate: vi.fn(),
+  broadcastTestUpdate: vi.fn(),
+  getStats: vi.fn(),
+  getHistory: vi.fn()
+};
+
 describe('WebSocket Routes', () => {
   let app: express.Application;
 
@@ -98,7 +106,7 @@ describe('WebSocket Routes', () => {
 
       const response = await request(app)
         .post(`/api/ws/pipeline/${pipelineId}/update`)
-        .send(null)
+        .send()
         .expect(400);
 
       expect(response.body).toMatchObject({
@@ -161,7 +169,7 @@ describe('WebSocket Routes', () => {
       const pipelineId = 'error-pipeline';
       const updateData = { status: 'running' };
 
-      webSocketService.broadcastPipelineUpdate.mockImplementationOnce(() => {
+      (webSocketService.broadcastPipelineUpdate as any).mockImplementationOnce(() => {
         throw new Error('WebSocket service error');
       });
 
@@ -284,7 +292,7 @@ describe('WebSocket Routes', () => {
       const testSuiteId = 'error-test-suite';
       const updateData = { status: 'running' };
 
-      webSocketService.broadcastTestUpdate.mockImplementationOnce(() => {
+      (webSocketService.broadcastTestUpdate as any).mockImplementationOnce(() => {
         throw new Error('Test broadcast failed');
       });
 
@@ -323,7 +331,7 @@ describe('WebSocket Routes', () => {
 
     it('should handle empty stats gracefully', async () => {
       const { webSocketService } = await import('../services/WebSocketService');
-      webSocketService.getStats.mockReturnValueOnce({
+      (webSocketService.getStats as any).mockReturnValueOnce({
         totalConnections: 0,
         activeConnections: 0,
         channels: [],
@@ -340,7 +348,7 @@ describe('WebSocket Routes', () => {
 
     it('should handle service errors gracefully', async () => {
       const { webSocketService } = await import('../services/WebSocketService');
-      webSocketService.getStats.mockImplementationOnce(() => {
+      (webSocketService.getStats as any).mockImplementationOnce(() => {
         throw new Error('Stats service unavailable');
       });
 
@@ -389,7 +397,7 @@ describe('WebSocket Routes', () => {
         timestamp: new Date()
       }));
 
-      webSocketService.getHistory.mockReturnValueOnce(longHistory);
+      (webSocketService.getHistory as any).mockReturnValueOnce(longHistory);
 
       const response = await request(app)
         .get(`/api/ws/history/${channel}?limit=${limit}`)
@@ -430,7 +438,7 @@ describe('WebSocket Routes', () => {
       const { webSocketService } = await import('../services/WebSocketService');
       const channel = 'empty-channel';
       
-      webSocketService.getHistory.mockReturnValueOnce([]);
+      (webSocketService.getHistory as any).mockReturnValueOnce([]);
 
       const response = await request(app)
         .get(`/api/ws/history/${channel}`)
@@ -456,7 +464,7 @@ describe('WebSocket Routes', () => {
       const { webSocketService } = await import('../services/WebSocketService');
       const channel = 'error-channel';
 
-      webSocketService.getHistory.mockImplementationOnce(() => {
+      (webSocketService.getHistory as any).mockImplementationOnce(() => {
         throw new Error('History service error');
       });
 

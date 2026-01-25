@@ -174,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePerformance } from '@/composables/usePerformance'
 import BaseCard from './BaseCard.vue'
 import BaseButton from './BaseButton.vue'
