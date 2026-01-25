@@ -88,6 +88,51 @@ class ApiService {
   async getTestingConfig() {
     return this.request('/config/testing')
   }
+
+  // Test metrics endpoints
+  async getTestSuites() {
+    return this.request('/test/suites')
+  }
+
+  async getTestSuite(suiteId: string) {
+    return this.request(`/test/suites/${suiteId}`)
+  }
+
+  async getTestResults(suiteId: string, limit?: number) {
+    const params = limit ? `?limit=${limit}` : ''
+    return this.request(`/test/suites/${suiteId}/results${params}`)
+  }
+
+  async getTestCoverage(suiteId?: string) {
+    const endpoint = suiteId ? `/test/coverage/${suiteId}` : '/test/coverage'
+    return this.request(endpoint)
+  }
+
+  async getTestTrends(suiteId?: string, period?: string) {
+    const params = new URLSearchParams()
+    if (period) params.append('period', period)
+    const paramString = params.toString() ? `?${params.toString()}` : ''
+    const endpoint = suiteId ? `/test/trends/${suiteId}${paramString}` : `/test/trends${paramString}`
+    return this.request(endpoint)
+  }
+
+  async getTestMetrics() {
+    return this.request('/test/metrics')
+  }
+
+  async runTestSuite(suiteId: string, options?: any) {
+    return this.request(`/test/suites/${suiteId}/run`, {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    })
+  }
+
+  async runAllTests(options?: any) {
+    return this.request('/test/run', {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    })
+  }
 }
 
 export const apiService = new ApiService()
@@ -106,4 +151,17 @@ export const api = {
   getUserProfile: () => apiService.getUserProfile(),
   getDemosConfig: () => apiService.getDemosConfig(),
   getTestingConfig: () => apiService.getTestingConfig(),
+  
+  // Test metrics API functions
+  getTestSuites: () => apiService.getTestSuites(),
+  getTestSuite: (suiteId: string) => apiService.getTestSuite(suiteId),
+  getTestResults: (suiteId: string, limit?: number) => 
+    apiService.getTestResults(suiteId, limit),
+  getTestCoverage: (suiteId?: string) => apiService.getTestCoverage(suiteId),
+  getTestTrends: (suiteId?: string, period?: string) => 
+    apiService.getTestTrends(suiteId, period),
+  getTestMetrics: () => apiService.getTestMetrics(),
+  runTestSuite: (suiteId: string, options?: any) => 
+    apiService.runTestSuite(suiteId, options),
+  runAllTests: (options?: any) => apiService.runAllTests(options),
 }

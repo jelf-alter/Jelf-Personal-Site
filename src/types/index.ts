@@ -325,6 +325,54 @@ export interface ITestEvent {
   timestamp: Date
 }
 
+// Test metrics and historical tracking interfaces
+export interface ITestMetricsSnapshot {
+  id: string
+  timestamp: Date
+  suiteId: string
+  coverage: ICoverageMetrics
+  testCounts: {
+    total: number
+    passed: number
+    failed: number
+    skipped: number
+  }
+  duration: number
+  status: 'passing' | 'failing' | 'unknown'
+}
+
+export interface ITestTrend {
+  suiteId: string
+  period: 'hour' | 'day' | 'week' | 'month'
+  snapshots: ITestMetricsSnapshot[]
+  averageCoverage: ICoverageMetrics
+  averageDuration: number
+  successRate: number
+  trendDirection: 'improving' | 'declining' | 'stable'
+}
+
+export interface ITestMetricsStorage {
+  suites: Map<string, ITestSuite>
+  results: Map<string, ITestResult[]>
+  snapshots: Map<string, ITestMetricsSnapshot[]>
+  trends: Map<string, ITestTrend>
+  lastUpdated: Date
+}
+
+export interface IOverallTestStats {
+  totalSuites: number
+  totalTests: number
+  passedTests: number
+  failedTests: number
+  overallCoverage: ICoverageMetrics
+  lastUpdated: Date
+  suitesStatus: {
+    passing: number
+    failing: number
+    unknown: number
+  }
+}
+
 // =============================================================================
 // Component Event Emitters
 // =============================================================================

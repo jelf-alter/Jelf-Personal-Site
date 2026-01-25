@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ITestSuite, ITestResult, ICoverageMetrics } from '@/types'
+import { testMetricsService, type ITestMetricsSnapshot, type ITestTrend } from '@/services/testMetrics'
+import { api } from '@/services/api'
 
 export const useTestingStore = defineStore('testing', () => {
   // State
@@ -9,53 +11,11 @@ export const useTestingStore = defineStore('testing', () => {
   const error = ref<string | null>(null)
   const isRunningTests = ref(false)
   const currentTestRun = ref<string | null>(null)
+  const lastUpdated = ref<Date>(new Date())
 
   // Getters
   const overallCoverage = computed((): ICoverageMetrics => {
-    if (testSuites.value.length === 0) {
-      return {
-        lines: { covered: 0, total: 0, percentage: 0 },
-        branches: { covered: 0, total: 0, percentage: 0 },
-        functions: { covered: 0, total: 0, percentage: 0 },
-        statements: { covered: 0, total: 0, percentage: 0 }
-      }
-    }
-
-    const totals = testSuites.value.reduce((acc, suite) => {
-      acc.lines.covered += suite.coverage.lines.covered
-      acc.lines.total += suite.coverage.lines.total
-      acc.branches.covered += suite.coverage.branches.covered
-      acc.branches.total += suite.coverage.branches.total
-      acc.functions.covered += suite.coverage.functions.covered
-      acc.functions.total += suite.coverage.functions.total
-      acc.statements.covered += suite.coverage.statements.covered
-      acc.statements.total += suite.coverage.statements.total
-      return acc
-    }, {
-      lines: { covered: 0, total: 0 },
-      branches: { covered: 0, total: 0 },
-      functions: { covered: 0, total: 0 },
-      statements: { covered: 0, total: 0 }
-    })
-
-    return {
-      lines: {
-        ...totals.lines,
-        percentage: totals.lines.total > 0 ? (totals.lines.covered / totals.lines.total) * 100 : 0
-      },
-      branches: {
-        ...totals.branches,
-        percentage: totals.branches.total > 0 ? (totals.branches.covered / totals.branches.total) * 100 : 0
-      },
-      functions: {
-        ...totals.functions,
-        percentage: totals.functions.total > 0 ? (totals.functions.covered / totals.functions.total) * 100 : 0
-      },
-      statements: {
-        ...totals.statements,
-        percentage: totals.statements.total > 0 ? (totals.statements.covered / totals.statements.total) * 100 : 0
-      }
-    }
+    return testMetricsService.calculateOverallCoverage()
   })
 
   const totalTests = computed(() => 
@@ -78,10 +38,11 @@ export const useTestingStore = defineStore('testing', () => {
   })
 
   const recentResults = computed(() => {
-    const allResults = testSuites.value.flatMap(suite => suite.results)
-    return allResults
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, 10)
+    return testMetricsService.getRecentResults(10)
+  })
+
+  const overallStats = computed(() => {
+    return testMetricsService.getOverallStats()
   })
 
   // Actions
@@ -90,93 +51,299 @@ export const useTestingStore = defineStore('testing', () => {
     error.value = null
     
     try {
-      // Mock data - will be replaced with API call
-      const mockTestSuites: ITestSuite[] = [
-        {
-          id: 'elt-pipeline-tests',
-          applicationId: 'elt-pipeline',
-          name: 'ELT Pipeline Tests',
-          testFiles: [],
-          coverage: {
-            lines: { covered: 85, total: 100, percentage: 85 },
-            branches: { covered: 20, total: 25, percentage: 80 },
-            functions: { covered: 15, total: 18, percentage: 83.3 },
-            statements: { covered: 85, total: 100, percentage: 85 }
-          },
-          lastRun: new Date(),
-          status: 'passing',
-          results: [],
-          totalTests: 25,
-          passedTests: 24,
-          failedTests: 1,
-          skippedTests: 0
-        },
-        {
-          id: 'api-testing-tests',
-          applicationId: 'api-testing',
-          name: 'API Testing Tool Tests',
-          testFiles: [],
-          coverage: {
-            lines: { covered: 70, total: 90, percentage: 77.8 },
-            branches: { covered: 15, total: 20, percentage: 75 },
-            functions: { covered: 12, total: 15, percentage: 80 },
-            statements: { covered: 70, total: 90, percentage: 77.8 }
-          },
-          lastRun: new Date(Date.now() - 3600000), // 1 hour ago
-          status: 'passing',
-          results: [],
-          totalTests: 18,
-          passedTests: 18,
-          failedTests: 0,
-          skippedTests: 0
-        }
-      ]
+      // Try to load from API first
+      const response = await api.getTestSuites()
       
-      testSuites.value = mockTestSuites
+      if (response.success && response.data) {
+        // Update local storage with API data
+        response.data.forEach((suite: ITestSuite) => {
+          testMetricsService.addTestSuite(suite)
+        })
+        testSuites.value = response.data
+      } else {
+        // Fall back to local storage
+        testSuites.value = testMetricsService.getAllTestSuites()
+        
+        // If no data exists, create mock data for development
+        if (testSuites.value.length === 0) {
+          await createMockTestData()
+        }
+      }
+      
+      lastUpdated.value = new Date()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to load test suites'
+      // Fall back to local storage on error
+      testSuites.value = testMetricsService.getAllTestSuites()
     } finally {
       isLoading.value = false
     }
   }
 
+  const createMockTestData = async () => {
+    const mockTestSuites: ITestSuite[] = [
+      {
+        id: 'elt-pipeline-tests',
+        applicationId: 'elt-pipeline',
+        name: 'ELT Pipeline Tests',
+        testFiles: [
+          {
+            id: 'elt-pipeline-unit',
+            filePath: 'src/components/demos/__tests__/ELTPipeline.property.test.ts',
+            testCount: 15,
+            passCount: 14,
+            failCount: 1,
+            skipCount: 0,
+            coverage: {
+              lines: { covered: 85, total: 100, percentage: 85 },
+              branches: { covered: 20, total: 25, percentage: 80 },
+              functions: { covered: 15, total: 18, percentage: 83.3 },
+              statements: { covered: 85, total: 100, percentage: 85 }
+            },
+            lastRun: new Date()
+          }
+        ],
+        coverage: {
+          lines: { covered: 85, total: 100, percentage: 85 },
+          branches: { covered: 20, total: 25, percentage: 80 },
+          functions: { covered: 15, total: 18, percentage: 83.3 },
+          statements: { covered: 85, total: 100, percentage: 85 }
+        },
+        lastRun: new Date(),
+        status: 'passing',
+        results: [],
+        totalTests: 25,
+        passedTests: 24,
+        failedTests: 1,
+        skippedTests: 0
+      },
+      {
+        id: 'landing-page-tests',
+        applicationId: 'landing-page',
+        name: 'Landing Page Tests',
+        testFiles: [
+          {
+            id: 'landing-page-unit',
+            filePath: 'src/components/landing/__tests__/LandingPage.property.test.ts',
+            testCount: 12,
+            passCount: 12,
+            failCount: 0,
+            skipCount: 0,
+            coverage: {
+              lines: { covered: 92, total: 100, percentage: 92 },
+              branches: { covered: 18, total: 20, percentage: 90 },
+              functions: { covered: 14, total: 15, percentage: 93.3 },
+              statements: { covered: 92, total: 100, percentage: 92 }
+            },
+            lastRun: new Date()
+          }
+        ],
+        coverage: {
+          lines: { covered: 92, total: 100, percentage: 92 },
+          branches: { covered: 18, total: 20, percentage: 90 },
+          functions: { covered: 14, total: 15, percentage: 93.3 },
+          statements: { covered: 92, total: 100, percentage: 92 }
+        },
+        lastRun: new Date(Date.now() - 3600000), // 1 hour ago
+        status: 'passing',
+        results: [],
+        totalTests: 18,
+        passedTests: 18,
+        failedTests: 0,
+        skippedTests: 0
+      },
+      {
+        id: 'api-integration-tests',
+        applicationId: 'api-integration',
+        name: 'API Integration Tests',
+        testFiles: [
+          {
+            id: 'api-integration-unit',
+            filePath: 'server/__tests__/api-integration.test.ts',
+            testCount: 20,
+            passCount: 19,
+            failCount: 1,
+            skipCount: 0,
+            coverage: {
+              lines: { covered: 78, total: 95, percentage: 82.1 },
+              branches: { covered: 15, total: 22, percentage: 68.2 },
+              functions: { covered: 12, total: 16, percentage: 75 },
+              statements: { covered: 78, total: 95, percentage: 82.1 }
+            },
+            lastRun: new Date()
+          }
+        ],
+        coverage: {
+          lines: { covered: 78, total: 95, percentage: 82.1 },
+          branches: { covered: 15, total: 22, percentage: 68.2 },
+          functions: { covered: 12, total: 16, percentage: 75 },
+          statements: { covered: 78, total: 95, percentage: 82.1 }
+        },
+        lastRun: new Date(Date.now() - 1800000), // 30 minutes ago
+        status: 'failing',
+        results: [],
+        totalTests: 20,
+        passedTests: 19,
+        failedTests: 1,
+        skippedTests: 0
+      }
+    ]
+    
+    // Add mock test suites to the metrics service
+    mockTestSuites.forEach(suite => {
+      testMetricsService.addTestSuite(suite)
+    })
+    
+    testSuites.value = mockTestSuites
+  }
+
   const runTests = async (suiteId?: string) => {
     isRunningTests.value = true
     currentTestRun.value = suiteId || 'all'
+    error.value = null
     
     try {
-      // Mock test execution - will be replaced with actual test runner
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Try to run tests via API
+      const response = suiteId 
+        ? await api.runTestSuite(suiteId)
+        : await api.runAllTests()
       
-      // Update test results
-      const now = new Date()
-      testSuites.value.forEach(suite => {
-        if (!suiteId || suite.id === suiteId) {
-          suite.lastRun = now
-          suite.status = Math.random() > 0.1 ? 'passing' : 'failing'
-        }
-      })
+      if (response.success) {
+        // Refresh test data after running tests
+        await loadTestSuites()
+      } else {
+        // Mock test execution for development
+        await mockTestExecution(suiteId)
+      }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to run tests'
+      // Fall back to mock execution
+      await mockTestExecution(suiteId)
     } finally {
       isRunningTests.value = false
       currentTestRun.value = null
     }
   }
 
+  const mockTestExecution = async (suiteId?: string) => {
+    // Simulate test execution time
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    const now = new Date()
+    const suitesToUpdate = suiteId 
+      ? testSuites.value.filter(suite => suite.id === suiteId)
+      : testSuites.value
+
+    suitesToUpdate.forEach(suite => {
+      // Simulate test results
+      const mockResult: ITestResult = {
+        id: `result-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        testName: `Mock Test Run - ${suite.name}`,
+        suite: suite.name,
+        status: Math.random() > 0.1 ? 'pass' : 'fail',
+        duration: Math.floor(Math.random() * 5000) + 1000, // 1-6 seconds
+        coverage: {
+          lines: { 
+            covered: Math.floor(Math.random() * 20) + 80, 
+            total: 100, 
+            percentage: 0 
+          },
+          branches: { 
+            covered: Math.floor(Math.random() * 10) + 15, 
+            total: 25, 
+            percentage: 0 
+          },
+          functions: { 
+            covered: Math.floor(Math.random() * 5) + 15, 
+            total: 20, 
+            percentage: 0 
+          },
+          statements: { 
+            covered: Math.floor(Math.random() * 20) + 80, 
+            total: 100, 
+            percentage: 0 
+          }
+        },
+        timestamp: now,
+        testType: 'unit'
+      }
+
+      // Calculate percentages
+      mockResult.coverage.lines.percentage = 
+        Math.round((mockResult.coverage.lines.covered / mockResult.coverage.lines.total) * 100 * 100) / 100
+      mockResult.coverage.branches.percentage = 
+        Math.round((mockResult.coverage.branches.covered / mockResult.coverage.branches.total) * 100 * 100) / 100
+      mockResult.coverage.functions.percentage = 
+        Math.round((mockResult.coverage.functions.covered / mockResult.coverage.functions.total) * 100 * 100) / 100
+      mockResult.coverage.statements.percentage = 
+        Math.round((mockResult.coverage.statements.covered / mockResult.coverage.statements.total) * 100 * 100) / 100
+
+      // Add result to metrics service
+      testMetricsService.addTestResult(suite.id, mockResult)
+      
+      // Update suite status
+      suite.lastRun = now
+      suite.status = mockResult.status === 'fail' ? 'failing' : 'passing'
+      suite.coverage = { ...mockResult.coverage }
+      
+      testMetricsService.updateTestSuite(suite.id, suite)
+    })
+
+    // Refresh local test suites
+    testSuites.value = testMetricsService.getAllTestSuites()
+    lastUpdated.value = now
+  }
+
   const getTestSuiteById = (id: string) => {
-    return testSuites.value.find(suite => suite.id === id) || null
+    return testMetricsService.getTestSuite(id)
   }
 
   const updateTestResult = (suiteId: string, result: ITestResult) => {
+    testMetricsService.addTestResult(suiteId, result)
+    
+    // Update local state
     const suite = testSuites.value.find(s => s.id === suiteId)
     if (suite) {
       suite.results.unshift(result)
-      // Keep only the last 100 results
       if (suite.results.length > 100) {
         suite.results = suite.results.slice(0, 100)
       }
     }
+  }
+
+  const getTestResults = (suiteId: string, limit?: number) => {
+    return testMetricsService.getTestResults(suiteId, limit)
+  }
+
+  const getSnapshots = (suiteId: string, limit?: number) => {
+    return testMetricsService.getSnapshots(suiteId, limit)
+  }
+
+  const getTrend = (suiteId: string) => {
+    return testMetricsService.getTrend(suiteId)
+  }
+
+  const getAllTrends = () => {
+    return testMetricsService.getAllTrends()
+  }
+
+  const exportTestData = () => {
+    return testMetricsService.exportData()
+  }
+
+  const importTestData = (jsonData: string) => {
+    const success = testMetricsService.importData(jsonData)
+    if (success) {
+      testSuites.value = testMetricsService.getAllTestSuites()
+      lastUpdated.value = new Date()
+    }
+    return success
+  }
+
+  const clearTestData = () => {
+    testMetricsService.clearStorage()
+    testSuites.value = []
+    lastUpdated.value = new Date()
   }
 
   return {
@@ -186,6 +353,7 @@ export const useTestingStore = defineStore('testing', () => {
     error,
     isRunningTests,
     currentTestRun,
+    lastUpdated,
     
     // Getters
     overallCoverage,
@@ -194,11 +362,19 @@ export const useTestingStore = defineStore('testing', () => {
     failedTests,
     overallStatus,
     recentResults,
+    overallStats,
     
     // Actions
     loadTestSuites,
     runTests,
     getTestSuiteById,
-    updateTestResult
+    updateTestResult,
+    getTestResults,
+    getSnapshots,
+    getTrend,
+    getAllTrends,
+    exportTestData,
+    importTestData,
+    clearTestData
   }
 })
