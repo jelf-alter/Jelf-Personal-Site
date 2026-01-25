@@ -14,6 +14,7 @@
     "build:with-types": "npm run type-check && npm run build",
     "start": "node server/dist/index.js",
     "preview": "vite preview",
+    "cleanup": "powershell -ExecutionPolicy Bypass -File cleanup-ports.ps1",
     "test": "vitest",
     "test:run": "vitest run",
     "test:server": "vitest run --config server/vitest.config.ts",

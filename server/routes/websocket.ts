@@ -13,10 +13,11 @@ router.post('/pipeline/:pipelineId/update', (req, res): void => {
 
     // Validate required fields
     if (!updateData || typeof updateData !== 'object') {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Invalid update data',
         message: 'Request body must contain update data object'
       });
+      return;
     }
 
     // Broadcast the update
@@ -47,10 +48,11 @@ router.post('/test/:testSuiteId/update', (req, res): void => {
 
     // Validate required fields
     if (!updateData || typeof updateData !== 'object') {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Invalid update data',
         message: 'Request body must contain update data object'
       });
+      return;
     }
 
     // Broadcast the update
