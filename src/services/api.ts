@@ -89,6 +89,25 @@ class ApiService {
     return this.request('/config/testing')
   }
 
+  // Test execution endpoints
+  async runTests(options?: any) {
+    return this.request('/test/run', {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    })
+  }
+
+  async runTestSuite(suiteId: string, options?: any) {
+    return this.request(`/test/run/${suiteId}`, {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    })
+  }
+
+  async getTestExecutionStatus(executionId: string) {
+    return this.request(`/test/status/${executionId}`)
+  }
+
   // Test metrics endpoints
   async getTestSuites() {
     return this.request('/test/suites')
@@ -119,20 +138,6 @@ class ApiService {
   async getTestMetrics() {
     return this.request('/test/metrics')
   }
-
-  async runTestSuite(suiteId: string, options?: any) {
-    return this.request(`/test/suites/${suiteId}/run`, {
-      method: 'POST',
-      body: JSON.stringify(options || {}),
-    })
-  }
-
-  async runAllTests(options?: any) {
-    return this.request('/test/run', {
-      method: 'POST',
-      body: JSON.stringify(options || {}),
-    })
-  }
 }
 
 export const apiService = new ApiService()
@@ -152,6 +157,13 @@ export const api = {
   getDemosConfig: () => apiService.getDemosConfig(),
   getTestingConfig: () => apiService.getTestingConfig(),
   
+  // Test execution API functions
+  runTests: (options?: any) => apiService.runTests(options),
+  runTestSuite: (suiteId: string, options?: any) => 
+    apiService.runTestSuite(suiteId, options),
+  getTestExecutionStatus: (executionId: string) => 
+    apiService.getTestExecutionStatus(executionId),
+  
   // Test metrics API functions
   getTestSuites: () => apiService.getTestSuites(),
   getTestSuite: (suiteId: string) => apiService.getTestSuite(suiteId),
@@ -161,7 +173,5 @@ export const api = {
   getTestTrends: (suiteId?: string, period?: string) => 
     apiService.getTestTrends(suiteId, period),
   getTestMetrics: () => apiService.getTestMetrics(),
-  runTestSuite: (suiteId: string, options?: any) => 
-    apiService.runTestSuite(suiteId, options),
-  runAllTests: (options?: any) => apiService.runAllTests(options),
+  runAllTests: (options?: any) => apiService.runTests(options),
 }

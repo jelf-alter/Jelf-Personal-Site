@@ -6,6 +6,7 @@ import { createServer } from 'http';
 import { demoRoutes } from './routes/demo.js';
 import { configRoutes } from './routes/config.js';
 import { websocketRoutes } from './routes/websocket.js';
+import { testRoutes } from './routes/test.js';
 import { webSocketService } from './services/WebSocketService.js';
 
 const app = express();
@@ -62,6 +63,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/demo', demoRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/ws', websocketRoutes);
+app.use('/api/test', testRoutes);
 
 // WebSocket stats endpoint (legacy - now available via /api/ws/stats)
 app.get('/api/ws/stats', (req, res) => {

@@ -39,6 +39,10 @@ export function useTestMetrics() {
     return testingStore.isRunningTests
   })
 
+  const currentTestRun = computed((): string | null => {
+    return testingStore.currentTestRun
+  })
+
   // Methods
   const loadTestMetrics = async () => {
     isLoading.value = true
@@ -213,6 +217,7 @@ export function useTestMetrics() {
     overallCoverage,
     testSuites,
     isRunningTests,
+    currentTestRun,
     
     // Methods
     loadTestMetrics,
