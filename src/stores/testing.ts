@@ -203,25 +203,30 @@ export const useTestingStore = defineStore('testing', () => {
     error.value = null
     
     try {
-      // Try to run tests via API
+      // Use the new test execution API
       const response = suiteId 
         ? await api.runTestSuite(suiteId)
         : await api.runAllTests()
       
       if (response.success) {
-        // Refresh test data after running tests
-        await loadTestSuites()
+        console.log('Test execution started:', response.data)
+        // The WebSocket will handle real-time updates
+        // We don't need to refresh immediately as updates will come via WebSocket
       } else {
-        // Mock test execution for development
-        await mockTestExecution(suiteId)
+        throw new Error(response.error || 'Failed to start test execution')
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to run tests'
-      // Fall back to mock execution
-      await mockTestExecution(suiteId)
+      console.error('Test execution error:', err)
     } finally {
-      isRunningTests.value = false
-      currentTestRun.value = null
+      // Don't set isRunningTests to false immediately
+      // Let the WebSocket 'test_completed' event handle this
+      setTimeout(() => {
+        if (isRunningTests.value) {
+          isRunningTests.value = false
+          currentTestRun.value = null
+        }
+      }, 30000) // Timeout after 30 seconds if no completion event
     }
   }
 
@@ -346,6 +351,31 @@ export const useTestingStore = defineStore('testing', () => {
     lastUpdated.value = new Date()
   }
 
+  // WebSocket event handlers for real-time test updates
+  const handleTestStarted = (testSuiteId: string, executionId: string) => {
+    isRunningTests.value = true
+    currentTestRun.value = testSuiteId === 'all-tests' ? 'all' : testSuiteId
+    console.log('Test execution started:', { testSuiteId, executionId })
+  }
+
+  const handleTestCompleted = (testSuiteId: string, executionId: string) => {
+    isRunningTests.value = false
+    currentTestRun.value = null
+    console.log('Test execution completed:', { testSuiteId, executionId })
+    
+    // Refresh test data after completion
+    setTimeout(() => {
+      loadTestSuites()
+    }, 1000)
+  }
+
+  const handleTestError = (testSuiteId: string, executionId: string, errorMessage: string) => {
+    isRunningTests.value = false
+    currentTestRun.value = null
+    error.value = errorMessage
+    console.error('Test execution error:', { testSuiteId, executionId, errorMessage })
+  }
+
   return {
     // State
     testSuites,
@@ -375,6 +405,11 @@ export const useTestingStore = defineStore('testing', () => {
     getAllTrends,
     exportTestData,
     importTestData,
-    clearTestData
+    clearTestData,
+    
+    // WebSocket event handlers
+    handleTestStarted,
+    handleTestCompleted,
+    handleTestError
   }
 })

@@ -53,13 +53,20 @@
     </div>
 
     <!-- Real-time status indicator -->
-    <div class="status-indicator" :class="{ active: isRunningTests }">
+    <div class="status-indicator" :class="{ 
+      active: isRunningTests || webSocket.isConnected.value,
+      connected: webSocket.isConnected.value,
+      disconnected: !webSocket.isConnected.value
+    }">
       <div class="status-dot"></div>
       <span class="status-text">
-        {{ isRunningTests ? 'Tests Running...' : 'Idle' }}
+        {{ getConnectionStatusText() }}
       </span>
       <div v-if="isRunningTests" class="running-suite">
         Running: {{ currentTestRun || 'All Suites' }}
+      </div>
+      <div v-if="webSocket.isConnected.value && !isRunningTests" class="live-indicator">
+        🔴 Live
       </div>
     </div>
 
@@ -190,13 +197,33 @@
               <h5 class="detail-title">Error Details</h5>
               <div class="error-details">
                 <div v-if="result.errorDetails" class="error-message">
-                  <strong>Error:</strong>
+                  <strong>Error Message:</strong>
                   <pre class="error-text">{{ result.errorDetails }}</pre>
                 </div>
                 
                 <div v-if="result.stackTrace" class="stack-trace">
-                  <strong>Stack Trace:</strong>
+                  <div class="stack-trace-header">
+                    <strong>Stack Trace:</strong>
+                    <button 
+                      class="copy-stack-btn"
+                      @click="copyStackTrace(result.stackTrace)"
+                      title="Copy stack trace to clipboard"
+                    >
+                      📋 Copy
+                    </button>
+                  </div>
                   <pre class="stack-text">{{ result.stackTrace }}</pre>
+                </div>
+                
+                <!-- Additional error context if available -->
+                <div v-if="result.errorContext" class="error-context">
+                  <strong>Context:</strong>
+                  <div class="context-details">
+                    <div v-for="(value, key) in result.errorContext" :key="key" class="context-item">
+                      <span class="context-key">{{ key }}:</span>
+                      <span class="context-value">{{ formatContextValue(value) }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -257,6 +284,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTestMetrics, testMetricsUtils } from '@/composables/useTestMetrics'
+import { useTestWebSocket } from '@/composables/useWebSocket'
 import type { ITestResult } from '@/types'
 
 // Props
@@ -283,23 +311,35 @@ const {
   loadTestMetrics
 } = useTestMetrics()
 
+// WebSocket integration for real-time updates
+const webSocket = useTestWebSocket()
+
 // Reactive state
 const statusFilter = ref<'all' | 'pass' | 'fail' | 'skip'>('all')
 const suiteFilter = ref<string>('all')
 const typeFilter = ref<'all' | 'unit' | 'integration' | 'e2e' | 'property'>('all')
-const autoRefresh = ref(false)
+const autoRefresh = ref(true) // Enable auto-refresh by default
 const expandedResults = ref(new Set<string>())
 const currentPage = ref(1)
 const refreshInterval = ref<number | null>(null)
+const liveResults = ref<ITestResult[]>([]) // Store live streaming results
 
 // Computed properties
 const filteredResults = computed((): ITestResult[] => {
-  const results = recentResults.value
-  if (!Array.isArray(results)) {
+  // Combine live results with stored results, prioritizing live results
+  const storedResults = Array.isArray(recentResults.value) ? recentResults.value : []
+  const allResults = [...liveResults.value, ...storedResults]
+  
+  // Remove duplicates based on test result ID
+  const uniqueResults = allResults.filter((result, index, arr) => 
+    arr.findIndex(r => r.id === result.id) === index
+  )
+  
+  if (!Array.isArray(uniqueResults)) {
     return []
   }
   
-  let filteredList = [...results]
+  let filteredList = [...uniqueResults]
   
   // Apply status filter
   if (statusFilter.value !== 'all') {
@@ -387,8 +427,8 @@ const stopAutoRefresh = () => {
 }
 
 const clearResults = () => {
-  // This would typically clear the results from storage
-  // For now, we'll just collapse all expanded results
+  // Clear live results and collapse expanded results
+  liveResults.value = []
   expandedResults.value.clear()
   currentPage.value = 1
 }
@@ -438,13 +478,159 @@ const getEmptyStateMessage = (): string => {
   return 'No test results available. Run some tests to see results here.'
 }
 
+const getConnectionStatusText = (): string => {
+  if (isRunningTests.value) {
+    return 'Tests Running...'
+  }
+  
+  switch (webSocket.connectionStatus.value) {
+    case 'connected':
+      return 'Connected - Live Updates'
+    case 'connecting':
+      return 'Connecting...'
+    case 'disconnected':
+      return 'Disconnected - No Live Updates'
+    case 'error':
+      return 'Connection Error'
+    default:
+      return 'Idle'
+  }
+}
+
+// WebSocket event handlers for real-time updates
+const handleTestUpdate = (message: any) => {
+  try {
+    const testUpdate = message.data
+    
+    // Handle different types of test updates
+    switch (testUpdate.type) {
+      case 'test_started':
+        // Test execution started
+        console.log('Test started:', testUpdate.testSuiteId)
+        break
+        
+      case 'test_result':
+        // Individual test result
+        const testResult: ITestResult = {
+          id: testUpdate.resultId || `live-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          testName: testUpdate.testName,
+          suite: testUpdate.suiteName,
+          status: testUpdate.status,
+          duration: testUpdate.duration,
+          coverage: testUpdate.coverage || {
+            lines: { covered: 0, total: 0, percentage: 0 },
+            branches: { covered: 0, total: 0, percentage: 0 },
+            functions: { covered: 0, total: 0, percentage: 0 },
+            statements: { covered: 0, total: 0, percentage: 0 }
+          },
+          timestamp: new Date(testUpdate.timestamp),
+          testType: testUpdate.testType || 'unit',
+          errorDetails: testUpdate.errorDetails,
+          stackTrace: testUpdate.stackTrace
+        }
+        
+        // Add to live results (prepend to show newest first)
+        liveResults.value.unshift(testResult)
+        
+        // Keep only recent live results to prevent memory issues
+        if (liveResults.value.length > 200) {
+          liveResults.value = liveResults.value.slice(0, 200)
+        }
+        
+        // Auto-expand failed tests for immediate visibility
+        if (testResult.status === 'fail') {
+          expandedResults.value.add(testResult.id)
+        }
+        
+        break
+        
+      case 'test_completed':
+        // Test suite completed
+        console.log('Test suite completed:', testUpdate.testSuiteId)
+        
+        // Refresh stored test metrics after completion
+        if (!isRunningTests.value) {
+          setTimeout(() => {
+            loadTestMetrics()
+          }, 1000)
+        }
+        break
+        
+      case 'test_error':
+        // Test execution error
+        console.error('Test execution error:', testUpdate.error)
+        break
+    }
+  } catch (error) {
+    console.error('Error handling test update:', error)
+  }
+}
+
+// Setup WebSocket connection and event handlers
+const setupWebSocketHandlers = () => {
+  // Handle test updates
+  webSocket.on('test_update', handleTestUpdate)
+  
+  // Handle connection status changes
+  webSocket.on('connection_status', (message: any) => {
+    if (message.data.status === 'connected') {
+      console.log('WebSocket connected for test streaming')
+      
+      // Subscribe to testing channel if not already subscribed
+      webSocket.subscribe('testing')
+    }
+  })
+  
+  // Start auto-refresh when WebSocket is connected
+  if (autoRefresh.value && webSocket.isConnected.value) {
+    startAutoRefresh()
+  }
+}
+
+// Cleanup WebSocket handlers
+const cleanupWebSocketHandlers = () => {
+  webSocket.off('test_update', handleTestUpdate)
+}
+
+// Utility methods for error handling
+const copyStackTrace = async (stackTrace: string) => {
+  try {
+    await navigator.clipboard.writeText(stackTrace)
+    // Could add a toast notification here
+    console.log('Stack trace copied to clipboard')
+  } catch (error) {
+    console.error('Failed to copy stack trace:', error)
+    // Fallback: select the text
+    const textArea = document.createElement('textarea')
+    textArea.value = stackTrace
+    document.body.appendChild(textArea)
+    textArea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textArea)
+  }
+}
+
+const formatContextValue = (value: any): string => {
+  if (typeof value === 'object') {
+    return JSON.stringify(value, null, 2)
+  }
+  return String(value)
+}
+
 // Lifecycle hooks
 onMounted(() => {
   loadTestMetrics()
+  setupWebSocketHandlers()
+  
+  // Start auto-refresh if enabled
+  if (autoRefresh.value) {
+    startAutoRefresh()
+  }
 })
 
 onUnmounted(() => {
   stopAutoRefresh()
+  cleanupWebSocketHandlers()
 })
 </script>
 
@@ -549,6 +735,24 @@ onUnmounted(() => {
 .status-indicator.active .status-dot {
   background: var(--color-primary);
   animation: pulse 2s infinite;
+}
+
+.status-indicator.connected .status-dot {
+  background: #22c55e;
+}
+
+.status-indicator.disconnected .status-dot {
+  background: #ef4444;
+}
+
+.live-indicator {
+  font-size: 0.875rem;
+  color: #22c55e;
+  font-weight: 600;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 @keyframes pulse {
@@ -841,6 +1045,64 @@ onUnmounted(() => {
   color: #991b1b;
   overflow-x: auto;
   white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.stack-trace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.copy-stack-btn {
+  padding: 0.25rem 0.5rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.copy-stack-btn:hover {
+  background: #e5e7eb;
+}
+
+.error-context {
+  margin-top: 1rem;
+}
+
+.context-details {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
+
+.context-item {
+  display: flex;
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+}
+
+.context-item:last-child {
+  margin-bottom: 0;
+}
+
+.context-key {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  min-width: 100px;
+}
+
+.context-value {
+  font-family: monospace;
+  font-size: 0.875rem;
+  color: var(--color-text);
   word-break: break-word;
 }
 

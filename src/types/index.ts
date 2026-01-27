@@ -148,6 +148,7 @@ export interface ITestResult {
   timestamp: Date
   errorDetails?: string
   stackTrace?: string
+  errorContext?: Record<string, any>
   testType: 'unit' | 'integration' | 'e2e' | 'property'
 }
 
