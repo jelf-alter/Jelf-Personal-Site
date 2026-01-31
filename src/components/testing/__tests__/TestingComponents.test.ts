@@ -68,11 +68,13 @@ describe('Testing Dashboard Components', () => {
       expect(wrapper.find('.overview-title').exists()).toBe(true)
     })
 
-    it('has the correct component structure', () => {
+    it('has the correct component structure including categorization', () => {
       const wrapper = mount(TestOverview)
       expect(wrapper.find('.test-overview').exists()).toBe(true)
       expect(wrapper.find('.overview-header').exists()).toBe(true)
       expect(wrapper.find('.metrics-grid').exists()).toBe(true)
+      expect(wrapper.find('.categorization-section').exists()).toBe(true)
+      expect(wrapper.find('.public-access-notice').exists()).toBe(true)
     })
   })
 
@@ -114,11 +116,12 @@ describe('Testing Dashboard Components', () => {
       expect(wrapper.find('.stream-title').exists()).toBe(true)
     })
 
-    it('has filter controls', () => {
+    it('has filter controls including category filter', () => {
       const wrapper = mount(TestResultsStream)
       expect(wrapper.find('.status-filter').exists()).toBe(true)
       expect(wrapper.find('.suite-filter').exists()).toBe(true)
       expect(wrapper.find('.type-filter').exists()).toBe(true)
+      expect(wrapper.find('.category-filter').exists()).toBe(true)
     })
 
     it('has status indicator', () => {

@@ -123,7 +123,7 @@ class ApiService {
   }
 
   async getTestCoverage(suiteId?: string) {
-    const endpoint = suiteId ? `/test/coverage/${suiteId}` : '/test/coverage'
+    const endpoint = suiteId ? `/test/coverage?suiteId=${suiteId}` : '/test/coverage'
     return this.request(endpoint)
   }
 
@@ -136,6 +136,25 @@ class ApiService {
   }
 
   async getTestMetrics() {
+    return this.request('/test/metrics')
+  }
+
+  // Public test data endpoints (no authentication required)
+  async getPublicTestSuites() {
+    return this.request('/test/suites')
+  }
+
+  async getPublicTestResults(suiteId: string, limit?: number) {
+    const params = limit ? `?limit=${limit}` : ''
+    return this.request(`/test/suites/${suiteId}/results${params}`)
+  }
+
+  async getPublicCoverage(suiteId?: string) {
+    const endpoint = suiteId ? `/test/coverage?suiteId=${suiteId}` : '/test/coverage'
+    return this.request(endpoint)
+  }
+
+  async getPublicTestMetrics() {
     return this.request('/test/metrics')
   }
 }
@@ -174,4 +193,11 @@ export const api = {
     apiService.getTestTrends(suiteId, period),
   getTestMetrics: () => apiService.getTestMetrics(),
   runAllTests: (options?: any) => apiService.runTests(options),
+  
+  // Public test data API functions (no authentication required)
+  getPublicTestSuites: () => apiService.getPublicTestSuites(),
+  getPublicTestResults: (suiteId: string, limit?: number) => 
+    apiService.getPublicTestResults(suiteId, limit),
+  getPublicCoverage: (suiteId?: string) => apiService.getPublicCoverage(suiteId),
+  getPublicTestMetrics: () => apiService.getPublicTestMetrics(),
 }
