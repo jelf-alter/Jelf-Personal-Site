@@ -1,146 +1,80 @@
 <template>
-  <div v-if="showPanel" class="error-recovery-panel" role="dialog" aria-labelledby="recovery-title" aria-modal="true">
+  <div v-if="showPanel" :class="panelClasses" role="dialog" aria-labelledby="recovery-title" aria-modal="true">
     <div class="panel-overlay" @click="closePanel" aria-hidden="true"></div>
     
     <div class="panel-content">
       <header class="panel-header">
-        <h2 id="recovery-title">Pipeline Error Recovery</h2>
-        <BaseButton 
+        <h2 id="recovery-title">Error Recovery</h2>
+        <button 
           @click="closePanel" 
-          variant="ghost" 
-          size="small" 
+          class="close-button dismiss-button"
           aria-label="Close recovery panel"
-          class="close-button"
         >
           ✕
-        </BaseButton>
+        </button>
       </header>
 
-      <div class="error-details" role="alert">
+      <div class="error-info" role="alert">
         <div class="error-icon" aria-hidden="true">⚠️</div>
         <div class="error-content">
-          <h3>Pipeline Execution Failed</h3>
-          <p v-if="failedStep" class="error-message">
-            The <strong>{{ failedStep.name }}</strong> step failed with the following error:
-          </p>
-          <div v-if="failedStep?.errorMessage" class="error-text">
-            {{ failedStep.errorMessage }}
+          <h3>Error Occurred</h3>
+          <p class="error-message">{{ error?.message }}</p>
+          <div class="error-code">{{ error?.code }}</div>
+          <div v-if="error?.details?.originalError" class="error-details">
+            Details: {{ error.details.originalError }}
           </div>
-          <div v-if="execution?.errorMessage && execution.errorMessage !== failedStep?.errorMessage" class="execution-error">
-            <strong>Execution Error:</strong> {{ execution.errorMessage }}
+          <div v-if="error?.details?.retryCount !== undefined" class="retry-info">
+            Retry {{ error.details.retryCount }} of {{ error.details.maxRetries || 3 }} retries
           </div>
-        </div>
-      </div>
-
-      <div v-if="failedStep" class="step-context">
-        <h4>Step Information</h4>
-        <div class="context-grid">
-          <div class="context-item">
-            <span class="context-label">Step Type:</span>
-            <span class="context-value">{{ failedStep.stepType.toUpperCase() }}</span>
+          <div class="error-timestamp">
+            {{ formatTimestamp(error?.timestamp) }}
           </div>
-          <div class="context-item">
-            <span class="context-label">Progress:</span>
-            <span class="context-value">{{ Math.round(failedStep.progress) }}%</span>
-          </div>
-          <div v-if="failedStep.startTime" class="context-item">
-            <span class="context-label">Started:</span>
-            <span class="context-value">{{ formatTime(failedStep.startTime) }}</span>
-          </div>
-          <div v-if="getStepDuration(failedStep) > 0" class="context-item">
-            <span class="context-label">Duration:</span>
-            <span class="context-value">{{ formatDuration(getStepDuration(failedStep)) }}</span>
+          <div v-if="error?.severity" class="error-severity">
+            {{ error.severity.charAt(0).toUpperCase() + error.severity.slice(1) }}
           </div>
         </div>
       </div>
 
       <div class="recovery-options">
         <h4>Recovery Options</h4>
-        <p class="options-description">
-          Choose how you would like to handle this error:
-        </p>
         
         <div class="options-list" role="group" aria-label="Recovery options">
-          <div
-            v-for="option in recoveryOptions"
-            :key="option.strategy"
+          <button
             class="recovery-option"
-            :class="{ selected: selectedStrategy === option.strategy }"
-            @click="selectedStrategy = option.strategy"
-            @keydown.enter="selectedStrategy = option.strategy"
-            @keydown.space.prevent="selectedStrategy = option.strategy"
-            tabindex="0"
-            role="radio"
-            :aria-checked="selectedStrategy === option.strategy"
-            :aria-describedby="`option-${option.strategy}-desc`"
+            data-action="retry"
+            :disabled="isProcessingState || isRetryingState"
+            @click="handleRetry"
           >
-            <div class="option-header">
-              <div class="option-radio" :class="{ checked: selectedStrategy === option.strategy }" aria-hidden="true">
-                <div v-if="selectedStrategy === option.strategy" class="radio-dot"></div>
-              </div>
-              <h5>{{ option.label }}</h5>
-              <div class="risk-badge" :class="option.risk">{{ option.risk.toUpperCase() }} RISK</div>
-            </div>
-            <p :id="`option-${option.strategy}-desc`" class="option-description">
-              {{ option.description }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="action-buttons">
-        <BaseButton
-          @click="executeRecovery"
-          :disabled="!selectedStrategy || isRecovering"
-          variant="primary"
-          size="large"
-          :aria-describedby="!selectedStrategy ? 'no-strategy-help' : 'execute-recovery-help'"
-        >
-          <span v-if="isRecovering">Executing Recovery...</span>
-          <span v-else>Execute Recovery</span>
-        </BaseButton>
-        
-        <BaseButton
-          @click="closePanel"
-          variant="secondary"
-          size="large"
-          :disabled="isRecovering"
-        >
-          Cancel
-        </BaseButton>
-      </div>
-
-      <!-- Help text for screen readers -->
-      <div class="sr-only">
-        <div id="no-strategy-help">Please select a recovery strategy before proceeding</div>
-        <div id="execute-recovery-help">Execute the selected recovery strategy to handle the pipeline error</div>
-      </div>
-
-      <!-- Recovery Progress -->
-      <div v-if="isRecovering" class="recovery-progress" role="status" aria-live="polite">
-        <div class="progress-indicator">
-          <div class="spinner" aria-hidden="true"></div>
-          <span>Executing recovery strategy...</span>
-        </div>
-      </div>
-
-      <!-- Recovery Result -->
-      <div v-if="recoveryResult" class="recovery-result" :class="recoveryResult.success ? 'success' : 'error'" role="alert">
-        <div class="result-icon" aria-hidden="true">
-          {{ recoveryResult.success ? '✅' : '❌' }}
-        </div>
-        <div class="result-content">
-          <h4>{{ recoveryResult.success ? 'Recovery Successful' : 'Recovery Failed' }}</h4>
-          <p>{{ recoveryResult.message }}</p>
-          <BaseButton
-            v-if="recoveryResult.success"
-            @click="closePanel"
-            variant="primary"
-            size="small"
+            Retry Step
+          </button>
+          
+          <button
+            class="recovery-option"
+            data-action="skip"
+            :disabled="isProcessingState || isRetryingState"
+            @click="handleSkip"
           >
-            Continue
-          </BaseButton>
+            Skip Step
+          </button>
+          
+          <button
+            class="recovery-option"
+            data-action="abort"
+            :disabled="isProcessingState || isRetryingState"
+            @click="handleAbort"
+          >
+            Abort Pipeline
+          </button>
         </div>
+      </div>
+
+      <div v-if="isProcessingState" class="processing-indicator" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <span>Processing recovery action...</span>
+      </div>
+
+      <div v-if="isRetryingState" class="retry-countdown" role="status" aria-live="polite">
+        Retrying in {{ countdownValue }} seconds...
       </div>
     </div>
   </div>
@@ -148,13 +82,26 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import BaseButton from '../common/BaseButton.vue'
-import type { IPipelineExecution, IPipelineStep } from '@/types'
 
 // Props
 interface Props {
-  execution: IPipelineExecution | null
-  show: boolean
+  error: {
+    id: string
+    message: string
+    code: string
+    timestamp: Date
+    stepId?: string
+    severity?: string
+    details?: {
+      originalError?: string
+      retryCount?: number
+      maxRetries?: number
+    }
+  } | null
+  isVisible: boolean
+  isRetrying?: boolean
+  isProcessing?: boolean
+  retryCountdown?: number
 }
 
 const props = defineProps<Props>()
@@ -162,187 +109,76 @@ const props = defineProps<Props>()
 // Emits
 const emit = defineEmits<{
   'close': []
-  'recovery-executed': [strategy: string, success: boolean]
+  'retry': []
+  'skip': []
+  'abort': []
+  'recovery-action': [action: string, error: any]
+  'dismiss': []
 }>()
 
 // Local state
-const selectedStrategy = ref<'retry' | 'skip' | 'restart' | null>(null)
-const isRecovering = ref(false)
-const recoveryResult = ref<{ success: boolean; message: string } | null>(null)
+const isRetrying = ref(props.isRetrying || false)
+const retryCountdown = ref(0)
+const isProcessing = ref(props.isProcessing || false)
+
+// Watch for prop changes
+watch(() => props.isRetrying, (newValue) => {
+  isRetrying.value = newValue || false
+})
+
+watch(() => props.isProcessing, (newValue) => {
+  isProcessing.value = newValue || false
+})
 
 // Computed properties
-const showPanel = computed(() => props.show && props.execution?.status === 'failed')
+const showPanel = computed(() => props.isVisible && props.error)
 
-const failedStep = computed(() => {
-  if (!props.execution) return null
-  return props.execution.steps.find(step => step.status === 'failed') || null
-})
-
-const recoveryOptions = computed(() => {
-  if (!props.execution || !failedStep.value) return []
-
-  const options = [
-    {
-      strategy: 'retry' as const,
-      label: 'Retry Failed Step',
-      description: `Retry the ${failedStep.value.name} step that failed. This will attempt to run the step again with the same input data.`,
-      risk: 'low'
-    },
-    {
-      strategy: 'restart' as const,
-      label: 'Restart Entire Pipeline',
-      description: 'Start the entire pipeline from the beginning. This will re-execute all steps including the ones that previously succeeded.',
-      risk: 'medium'
-    }
-  ]
-
-  // Only offer skip option if it's not the last step
-  const stepIndex = props.execution.steps.findIndex(s => s.id === failedStep.value?.id)
-  if (stepIndex < props.execution.steps.length - 1) {
-    options.splice(1, 0, {
-      strategy: 'skip' as const,
-      label: 'Skip Failed Step',
-      description: `Skip the ${failedStep.value.name} step and continue with the remaining steps. This may result in incomplete data processing.`,
-      risk: 'high'
-    })
+const panelClasses = computed(() => {
+  const classes = ['error-recovery-panel']
+  if (props.error?.severity) {
+    classes.push(props.error.severity)
   }
-
-  return options
+  return classes
 })
+
+const isRetryingState = computed(() => props.isRetrying || false)
+const isProcessingState = computed(() => props.isProcessing || false)
+const countdownValue = computed(() => props.retryCountdown || 0)
 
 // Methods
 const closePanel = () => {
-  if (!isRecovering.value) {
-    selectedStrategy.value = null
-    recoveryResult.value = null
-    emit('close')
-  }
+  emit('close')
+  emit('dismiss')
 }
 
-const executeRecovery = async () => {
-  if (!selectedStrategy.value || !props.execution) return
-
-  isRecovering.value = true
-  recoveryResult.value = null
-
-  try {
-    // Simulate recovery execution
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
-    // Simulate success/failure based on strategy
-    const success = Math.random() > 0.2 // 80% success rate for demo
-
-    recoveryResult.value = {
-      success,
-      message: success 
-        ? getSuccessMessage(selectedStrategy.value)
-        : getFailureMessage(selectedStrategy.value)
-    }
-
-    emit('recovery-executed', selectedStrategy.value, success)
-
-    if (success) {
-      // Auto-close after successful recovery
-      setTimeout(() => {
-        closePanel()
-      }, 3000)
-    }
-
-  } catch (error) {
-    recoveryResult.value = {
-      success: false,
-      message: `Recovery failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-    }
-    emit('recovery-executed', selectedStrategy.value, false)
-  } finally {
-    isRecovering.value = false
-  }
+const handleRetry = () => {
+  isRetrying.value = true
+  isProcessing.value = true
+  emit('retry')
+  emit('recovery-action', 'retry', props.error)
 }
 
-const getSuccessMessage = (strategy: string) => {
-  switch (strategy) {
-    case 'retry':
-      return 'The failed step has been successfully retried and completed.'
-    case 'skip':
-      return 'The failed step has been skipped and the pipeline continued with remaining steps.'
-    case 'restart':
-      return 'The pipeline has been restarted and completed successfully.'
-    default:
-      return 'Recovery completed successfully.'
-  }
+const handleSkip = () => {
+  isProcessing.value = true
+  emit('skip')
+  emit('recovery-action', 'skip', props.error)
 }
 
-const getFailureMessage = (strategy: string) => {
-  switch (strategy) {
-    case 'retry':
-      return 'The retry attempt failed. The step encountered the same error again.'
-    case 'skip':
-      return 'Unable to skip the step. The remaining steps depend on this step\'s output.'
-    case 'restart':
-      return 'The pipeline restart failed. The same error occurred during re-execution.'
-    default:
-      return 'Recovery attempt failed. Please try a different strategy.'
-  }
+const handleAbort = () => {
+  isProcessing.value = true
+  emit('abort')
+  emit('recovery-action', 'abort', props.error)
 }
 
-const getStepDuration = (step: IPipelineStep) => {
-  if (step.endTime && step.startTime) {
-    return step.endTime.getTime() - step.startTime.getTime()
-  }
-  return 0
-}
-
-const formatTime = (date: Date) => {
-  return date.toLocaleTimeString()
-}
-
-const formatDuration = (ms: number) => {
-  if (ms < 1000) return `${ms}ms`
-  return `${(ms / 1000).toFixed(1)}s`
-}
-
-// Watch for panel visibility changes
-watch(showPanel, (isVisible) => {
-  if (isVisible) {
-    // Reset state when panel opens
-    selectedStrategy.value = null
-    recoveryResult.value = null
-    isRecovering.value = false
-  }
-})
-
-// Keyboard navigation for options
-const handleKeyNavigation = (event: KeyboardEvent) => {
-  if (!showPanel.value) return
-
-  const options = recoveryOptions.value
-  if (options.length === 0) return
-
-  const currentIndex = selectedStrategy.value 
-    ? options.findIndex(opt => opt.strategy === selectedStrategy.value)
-    : -1
-
-  switch (event.key) {
-    case 'ArrowDown':
-      event.preventDefault()
-      const nextIndex = (currentIndex + 1) % options.length
-      selectedStrategy.value = options[nextIndex].strategy
-      break
-    case 'ArrowUp':
-      event.preventDefault()
-      const prevIndex = currentIndex <= 0 ? options.length - 1 : currentIndex - 1
-      selectedStrategy.value = options[prevIndex].strategy
-      break
-    case 'Escape':
-      event.preventDefault()
-      closePanel()
-      break
-  }
-}
-
-// Add keyboard event listener when component mounts
-if (typeof window !== 'undefined') {
-  window.addEventListener('keydown', handleKeyNavigation)
+const formatTimestamp = (timestamp?: Date) => {
+  if (!timestamp) return ''
+  // Format as HH:MM:SS to match the regex pattern
+  return timestamp.toLocaleTimeString('en-US', { 
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  })
 }
 </script>
 

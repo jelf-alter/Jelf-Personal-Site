@@ -293,8 +293,8 @@ import type { IPipelineExecution, IPipelineStep } from '@/types'
 
 // Props
 interface Props {
-  execution: IPipelineExecution
-  isExecuting: boolean
+  pipelineSteps: IPipelineStep[]
+  currentStep?: string
 }
 
 const props = defineProps<Props>()
@@ -315,7 +315,7 @@ const stepWidth = 120
 const stepHeight = 80
 
 // Computed properties
-const steps = computed(() => props.execution.steps)
+const steps = computed(() => props.pipelineSteps || [])
 
 const stepPositions = computed(() => {
   const totalSteps = steps.value.length
@@ -344,13 +344,14 @@ const overallProgress = computed(() => {
 })
 
 const executionTime = computed(() => {
-  if (props.execution.endTime && props.execution.startTime) {
-    return props.execution.endTime.getTime() - props.execution.startTime.getTime()
-  }
-  if (props.isExecuting && props.execution.startTime) {
-    return Date.now() - props.execution.startTime.getTime()
-  }
-  return 0
+  // Calculate based on step times if available
+  const completedSteps = steps.value.filter(s => s.endTime && s.startTime)
+  if (completedSteps.length === 0) return 0
+  
+  const earliest = Math.min(...completedSteps.map(s => s.startTime!.getTime()))
+  const latest = Math.max(...completedSteps.map(s => s.endTime!.getTime()))
+  
+  return latest - earliest
 })
 
 const ariaLabel = computed(() => {
@@ -484,9 +485,9 @@ const formatTime = (date: Date) => {
 
 // Watch for execution changes to show data flow animation
 watch(
-  () => props.isExecuting,
-  (isExecuting) => {
-    showDataFlow.value = isExecuting
+  () => props.currentStep,
+  (currentStep) => {
+    showDataFlow.value = !!currentStep
   }
 )
 </script>

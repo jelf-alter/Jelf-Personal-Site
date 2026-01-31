@@ -15,22 +15,22 @@
         <span class="status-text">{{ connectionStatusText }}</span>
       </div>
       <div class="connection-actions" role="group" aria-label="Connection controls">
-        <BaseButton 
+        <button
+          class="connect-button"
           @click="connect" 
-          :disabled="isConnected" 
-          variant="primary"
+          :disabled="isConnected"
           aria-describedby="connect-help"
         >
           Connect
-        </BaseButton>
-        <BaseButton 
+        </button>
+        <button
+          class="disconnect-button"
           @click="disconnect" 
-          :disabled="!isConnected" 
-          variant="secondary"
+          :disabled="!isConnected"
           aria-describedby="disconnect-help"
         >
           Disconnect
-        </BaseButton>
+        </button>
       </div>
       <div class="sr-only">
         <div id="connect-help">Establish WebSocket connection to the server</div>
@@ -38,47 +38,30 @@
       </div>
     </section>
 
-    <section class="subscriptions" aria-labelledby="subscriptions-title">
-      <h2 id="subscriptions-title">Channel Subscriptions</h2>
-      <div class="subscription-controls" role="group" aria-label="Subscription controls">
-        <BaseButton 
-          @click="subscribe('pipeline')" 
-          variant="secondary"
+    <section class="message-input-section" aria-labelledby="input-title">
+      <h2 id="input-title">Send Message</h2>
+      <div class="input-controls" role="group" aria-label="Message input controls">
+        <input
+          v-model="messageInput"
+          type="text"
+          class="message-input"
+          placeholder="Enter message to send..."
           :disabled="!isConnected"
-          aria-describedby="pipeline-sub-help"
+          @keydown.enter="sendMessage"
+          aria-describedby="input-help"
+        />
+        <button
+          class="send-button"
+          @click="sendMessage"
+          :disabled="!isConnected || !messageInput.trim()"
+          aria-describedby="send-help"
         >
-          Subscribe to Pipeline Updates
-        </BaseButton>
-        <BaseButton 
-          @click="subscribe('testing')" 
-          variant="secondary"
-          :disabled="!isConnected"
-          aria-describedby="testing-sub-help"
-        >
-          Subscribe to Test Updates
-        </BaseButton>
-        <BaseButton 
-          @click="unsubscribe('pipeline')" 
-          variant="secondary"
-          :disabled="!isConnected"
-          aria-describedby="pipeline-unsub-help"
-        >
-          Unsubscribe from Pipeline
-        </BaseButton>
-        <BaseButton 
-          @click="unsubscribe('testing')" 
-          variant="secondary"
-          :disabled="!isConnected"
-          aria-describedby="testing-unsub-help"
-        >
-          Unsubscribe from Testing
-        </BaseButton>
+          Send
+        </button>
       </div>
       <div class="sr-only">
-        <div id="pipeline-sub-help">Receive real-time updates from pipeline processing</div>
-        <div id="testing-sub-help">Receive real-time updates from test execution</div>
-        <div id="pipeline-unsub-help">Stop receiving pipeline updates</div>
-        <div id="testing-unsub-help">Stop receiving test updates</div>
+        <div id="input-help">Type a message to send through the WebSocket connection</div>
+        <div id="send-help">Send the message to all connected clients</div>
       </div>
     </section>
 
@@ -149,11 +132,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useWebSocket } from '../../composables/useWebSocket';
-import BaseButton from '../common/BaseButton.vue';
 import type { WebSocketMessage } from '../../services/websocket';
 
 const webSocket = useWebSocket({ autoConnect: false });
 const messages = ref<WebSocketMessage[]>([]);
+const messageInput = ref('');
 
 // Computed properties
 const connectionStatusText = computed(() => {
@@ -191,6 +174,19 @@ const subscribe = (channel: string) => {
 const unsubscribe = (channel: string) => {
   webSocket.unsubscribe(channel);
 };
+
+const sendMessage = () => {
+  if (!messageInput.value.trim() || !isConnected.value) return
+  
+  // Send message through WebSocket
+  webSocket.send({
+    type: 'user_message',
+    data: { message: messageInput.value.trim() },
+    timestamp: new Date().toISOString()
+  })
+  
+  messageInput.value = ''
+}
 
 const formatTime = (timestamp: string) => {
   return new Date(timestamp).toLocaleTimeString();
@@ -347,6 +343,59 @@ const { isConnected, connectionStatus } = webSocket;
 .connection-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.connect-button,
+.disconnect-button,
+.send-button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.connect-button {
+  background-color: #3498db;
+  color: white;
+}
+
+.connect-button:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+
+.disconnect-button,
+.send-button {
+  background-color: #95a5a6;
+  color: white;
+}
+
+.disconnect-button:hover:not(:disabled),
+.send-button:hover:not(:disabled) {
+  background-color: #7f8c8d;
+}
+
+.message-input-section {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+
+.input-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.message-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
 }
 
 .subscriptions {

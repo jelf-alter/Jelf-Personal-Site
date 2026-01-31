@@ -2,12 +2,20 @@
   <div 
     :class="cardClasses"
     :role="role"
-    :aria-labelledby="ariaLabelledby"
+    :aria-labelledby="ariaLabelledby || titleId"
     :aria-describedby="ariaDescribedby"
-    :tabindex="clickable ? 0 : undefined"
+    :aria-disabled="disabled ? 'true' : undefined"
+    :tabindex="clickable && !disabled ? 0 : undefined"
     @click="handleClick"
     @keydown="handleKeydown"
   >
+    <!-- Loading overlay -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+      </div>
+    </div>
+    
     <header v-if="$slots.header || title" class="card-header">
       <slot name="header">
         <h3 v-if="title" :id="titleId" class="card-title">{{ title }}</h3>
@@ -32,7 +40,15 @@ interface Props {
   variant?: 'default' | 'elevated' | 'outlined' | 'flat'
   padding?: 'none' | 'small' | 'medium' | 'large'
   hoverable?: boolean
+  hover?: boolean
   clickable?: boolean
+  loading?: boolean
+  disabled?: boolean
+  responsive?: boolean
+  elevation?: number
+  border?: string
+  customClass?: string
+  rounded?: boolean
   role?: string
   ariaLabelledby?: string
   ariaDescribedby?: string
@@ -46,7 +62,13 @@ const props = withDefaults(defineProps<Props>(), {
   variant: 'default',
   padding: 'medium',
   hoverable: false,
+  hover: false,
   clickable: false,
+  loading: false,
+  disabled: false,
+  responsive: false,
+  elevation: 0,
+  rounded: false,
   role: 'article'
 })
 
@@ -57,24 +79,63 @@ const cardId = ref(`card-${Math.random().toString(36).substr(2, 9)}`)
 const titleId = computed(() => props.title ? `${cardId.value}-title` : undefined)
 const contentId = computed(() => `${cardId.value}-content`)
 
-const cardClasses = computed(() => [
-  'base-card',
-  `base-card--${props.variant}`,
-  `base-card--padding-${props.padding}`,
-  {
-    'base-card--hoverable': props.hoverable,
-    'base-card--clickable': props.clickable
+const cardClasses = computed(() => {
+  const classes = [
+    'base-card',
+    `base-card--${props.variant}`,
+    `base-card--padding-${props.padding}`,
+  ]
+  
+  // Add padding class that tests expect
+  classes.push(`padding-${props.padding}`)
+  
+  if (props.hoverable || props.hover) {
+    classes.push('hover-enabled')
   }
-])
+  
+  if (props.clickable) {
+    classes.push('clickable')
+  }
+  
+  if (props.loading) {
+    classes.push('loading')
+  }
+  
+  if (props.disabled) {
+    classes.push('disabled')
+  }
+  
+  if (props.responsive) {
+    classes.push('responsive')
+  }
+  
+  if (props.elevation > 0) {
+    classes.push(`elevation-${props.elevation}`)
+  }
+  
+  if (props.border) {
+    classes.push(`border-${props.border}`)
+  }
+  
+  if (props.rounded) {
+    classes.push('rounded')
+  }
+  
+  if (props.customClass) {
+    classes.push(...props.customClass.split(' '))
+  }
+  
+  return classes
+})
 
 const handleClick = (event: MouseEvent) => {
-  if (props.clickable) {
+  if (props.clickable && !props.disabled && !props.loading) {
     emit('click', event)
   }
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
-  if (props.clickable && (event.key === 'Enter' || event.key === ' ')) {
+  if (props.clickable && !props.disabled && !props.loading && (event.key === 'Enter' || event.key === ' ')) {
     event.preventDefault()
     emit('click', event)
   }
@@ -112,8 +173,21 @@ const handleKeydown = (event: KeyboardEvent) => {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 }
 
+.hover-enabled:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
 .base-card--clickable {
   cursor: pointer;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  transform: translateY(-2px);
 }
 
 .base-card--clickable:hover {
@@ -127,6 +201,78 @@ const handleKeydown = (event: KeyboardEvent) => {
 .base-card--clickable:focus-visible {
   outline: 2px solid #3498db;
   outline-offset: 2px;
+}
+
+/* Loading state */
+.loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: inherit;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #ecf0f1;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Disabled state */
+.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+.responsive {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Elevation levels */
+.elevation-1 { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24); }
+.elevation-2 { box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23); }
+.elevation-3 { box-shadow: 0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23); }
+.elevation-4 { box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22); }
+.elevation-5 { box-shadow: 0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22); }
+
+/* Border variants */
+.border-primary { border: 2px solid #3498db; }
+.border-secondary { border: 2px solid #95a5a6; }
+.border-success { border: 2px solid #27ae60; }
+.border-warning { border: 2px solid #f39c12; }
+.border-danger { border: 2px solid #e74c3c; }
+
+/* Rounded variant */
+.rounded {
+  border-radius: 16px;
 }
 
 /* Padding variants */
