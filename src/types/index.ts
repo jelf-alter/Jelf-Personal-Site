@@ -131,6 +131,19 @@ export interface IELTPipeline {
 // Testing and Coverage Models
 // =============================================================================
 
+export interface IPublicTestAccess {
+  enabled: boolean
+  accessLevel: 'full' | 'summary' | 'restricted'
+  allowedCategories: string[]
+  allowedTypes: string[]
+  hideFailureDetails: boolean
+  anonymizeData: boolean
+  rateLimiting: {
+    enabled: boolean
+    requestsPerMinute: number
+  }
+}
+
 export interface ICoverageMetrics {
   lines: { covered: number; total: number; percentage: number }
   branches: { covered: number; total: number; percentage: number }
@@ -150,6 +163,11 @@ export interface ITestResult {
   stackTrace?: string
   errorContext?: Record<string, any>
   testType: 'unit' | 'integration' | 'e2e' | 'property'
+  category: 'demo-application' | 'core-feature' | 'backend' | 'quality-assurance' | 'utilities' | 'end-to-end'
+  isPublic: boolean
+  publicUrl?: string
+  publicAccessLevel: 'full' | 'summary' | 'restricted'
+  tags?: string[]
 }
 
 export interface ITestFile {
@@ -161,6 +179,12 @@ export interface ITestFile {
   skipCount: number
   coverage: ICoverageMetrics
   lastRun: Date
+  testType: 'unit' | 'integration' | 'e2e' | 'property'
+  category: 'demo-application' | 'core-feature' | 'backend' | 'quality-assurance' | 'utilities' | 'end-to-end'
+  isPublic: boolean
+  publicUrl?: string
+  publicAccessLevel: 'full' | 'summary' | 'restricted'
+  tags?: string[]
 }
 
 export interface ITestSuite {
@@ -176,6 +200,14 @@ export interface ITestSuite {
   passedTests: number
   failedTests: number
   skippedTests: number
+  testType: 'unit' | 'integration' | 'e2e' | 'property'
+  category: 'demo-application' | 'core-feature' | 'backend' | 'quality-assurance' | 'utilities' | 'end-to-end'
+  description: string
+  isPublic: boolean
+  publicUrl?: string
+  publicAccessLevel: 'full' | 'summary' | 'restricted'
+  tags?: string[]
+  priority: 'high' | 'medium' | 'low'
 }
 
 // =============================================================================

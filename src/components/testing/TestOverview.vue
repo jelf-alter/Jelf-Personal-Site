@@ -115,6 +115,73 @@
       </div>
     </div>
 
+    <!-- Test categorization summary -->
+    <div class="categorization-section">
+      <h3 class="section-title">Test Organization</h3>
+      
+      <!-- Test Types -->
+      <div class="category-group">
+        <h4 class="category-title">By Test Type</h4>
+        <div class="category-grid">
+          <div class="category-card" v-for="(data, type) in testTypesSummary" :key="type">
+            <div class="category-icon">{{ getTestTypeIcon(type) }}</div>
+            <div class="category-content">
+              <div class="category-name">{{ formatTestType(type) }}</div>
+              <div class="category-stats">
+                <span class="stat-item">{{ data.suites }} suites</span>
+                <span class="stat-item">{{ data.tests }} tests</span>
+                <span class="stat-item">{{ data.coverage.toFixed(1) }}% coverage</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Test Categories -->
+      <div class="category-group">
+        <h4 class="category-title">By Application Category</h4>
+        <div class="category-grid">
+          <div class="category-card" v-for="(data, category) in testCategoriesSummary" :key="category">
+            <div class="category-icon">{{ getCategoryIcon(category) }}</div>
+            <div class="category-content">
+              <div class="category-name">{{ formatCategory(category) }}</div>
+              <div class="category-stats">
+                <span class="stat-item">{{ data.suites }} suites</span>
+                <span class="stat-item">{{ data.tests }} tests</span>
+                <span class="stat-item">{{ data.coverage.toFixed(1) }}% coverage</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Public Access Notice -->
+      <div class="public-access-notice">
+        <div class="notice-icon">🌐</div>
+        <div class="notice-content">
+          <div class="notice-title">Public Test Access</div>
+          <div class="notice-description">
+            All test results, coverage metrics, and execution history are publicly accessible without authentication.
+            This demonstrates transparency in code quality and testing practices.
+          </div>
+          <div class="access-details">
+            <div class="access-detail">
+              <span class="detail-label">Access Level:</span>
+              <span class="detail-value">Full Access</span>
+            </div>
+            <div class="access-detail">
+              <span class="detail-label">Public Suites:</span>
+              <span class="detail-value">{{ testSuites.filter(s => s.isPublic).length }} / {{ testSuites.length }}</span>
+            </div>
+            <div class="access-detail">
+              <span class="detail-label">Real-time Updates:</span>
+              <span class="detail-value">Enabled</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Test suites status -->
     <div class="suites-section">
       <h3 class="section-title">Test Suites Status</h3>
@@ -227,6 +294,50 @@ const {
 // Computed
 const trends = computed(() => getAllTrends())
 
+const testTypesSummary = computed(() => {
+  const summary: Record<string, { suites: number; tests: number; coverage: number }> = {}
+  
+  testSuites.value.forEach(suite => {
+    const type = suite.testType || 'unit'
+    if (!summary[type]) {
+      summary[type] = { suites: 0, tests: 0, coverage: 0 }
+    }
+    summary[type].suites++
+    summary[type].tests += suite.totalTests
+    summary[type].coverage += suite.coverage.lines.percentage
+  })
+  
+  // Calculate average coverage for each type
+  Object.keys(summary).forEach(type => {
+    const typeData = summary[type]
+    typeData.coverage = typeData.suites > 0 ? typeData.coverage / typeData.suites : 0
+  })
+  
+  return summary
+})
+
+const testCategoriesSummary = computed(() => {
+  const summary: Record<string, { suites: number; tests: number; coverage: number }> = {}
+  
+  testSuites.value.forEach(suite => {
+    const category = suite.category || 'utilities'
+    if (!summary[category]) {
+      summary[category] = { suites: 0, tests: 0, coverage: 0 }
+    }
+    summary[category].suites++
+    summary[category].tests += suite.totalTests
+    summary[category].coverage += suite.coverage.lines.percentage
+  })
+  
+  // Calculate average coverage for each category
+  Object.keys(summary).forEach(category => {
+    const categoryData = summary[category]
+    categoryData.coverage = categoryData.suites > 0 ? categoryData.coverage / categoryData.suites : 0
+  })
+  
+  return summary
+})
+
 // Methods
 const calculateSuccessRate = (): number => {
   const stats = overallStats.value
@@ -268,6 +379,52 @@ const formatTimestamp = (date: Date): string => {
   if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
   if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
   return date.toLocaleDateString()
+}
+
+const getTestTypeIcon = (type: string): string => {
+  switch (type) {
+    case 'unit': return '🔬'
+    case 'integration': return '🔗'
+    case 'property': return '⚖️'
+    case 'e2e': return '🎭'
+    default: return '🧪'
+  }
+}
+
+const formatTestType = (type: string): string => {
+  switch (type) {
+    case 'unit': return 'Unit Tests'
+    case 'integration': return 'Integration Tests'
+    case 'property': return 'Property-Based Tests'
+    case 'e2e': return 'End-to-End Tests'
+    default: return type.charAt(0).toUpperCase() + type.slice(1)
+  }
+}
+
+const getCategoryIcon = (category: string): string => {
+  switch (category) {
+    case 'demo-application': return '🎨'
+    case 'core-feature': return '🏠'
+    case 'backend': return '⚙️'
+    case 'quality-assurance': return '✅'
+    case 'utilities': return '🛠️'
+    case 'end-to-end': return '🎭'
+    default: return '📦'
+  }
+}
+
+const formatCategory = (category: string): string => {
+  switch (category) {
+    case 'demo-application': return 'Demo Applications'
+    case 'core-feature': return 'Core Features'
+    case 'backend': return 'Backend Services'
+    case 'quality-assurance': return 'Quality Assurance'
+    case 'utilities': return 'Utilities'
+    case 'end-to-end': return 'End-to-End'
+    default: return category.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ')
+  }
 }
 
 // Auto-refresh setup
@@ -361,7 +518,7 @@ if (props.refreshInterval > 0) {
   margin-top: 0.25rem;
 }
 
-.coverage-section, .suites-section, .trends-section {
+.coverage-section, .suites-section, .trends-section, .categorization-section {
   margin-bottom: 2rem;
 }
 
@@ -370,6 +527,128 @@ if (props.refreshInterval > 0) {
   font-weight: 600;
   color: var(--color-text);
   margin-bottom: 1rem;
+}
+
+.category-group {
+  margin-bottom: 2rem;
+}
+
+.category-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 1rem;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.category-card {
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.category-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.category-content {
+  flex: 1;
+}
+
+.category-name {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+.category-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.stat-item {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  background: var(--color-background);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+}
+
+.public-access-notice {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #0ea5e9;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.notice-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.notice-content {
+  flex: 1;
+}
+
+.notice-title {
+  font-weight: 600;
+  color: #0c4a6e;
+  margin-bottom: 0.5rem;
+}
+
+.notice-description {
+  color: #075985;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.access-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.access-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.detail-label {
+  color: #0c4a6e;
+  font-weight: 600;
+}
+
+.detail-value {
+  color: #075985;
+  background: rgba(14, 165, 233, 0.1);
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  font-weight: 500;
 }
 
 .coverage-grid {
@@ -620,6 +899,20 @@ if (props.refreshInterval > 0) {
   .suite-metrics {
     flex-direction: column;
     gap: 0.5rem;
+  }
+  
+  .category-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .category-stats {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .public-access-notice {
+    flex-direction: column;
+    text-align: center;
   }
 }
 </style>

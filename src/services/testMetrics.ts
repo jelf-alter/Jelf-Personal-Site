@@ -120,10 +120,19 @@ class TestMetricsService {
 
   // Test suite management
   addTestSuite(suite: ITestSuite): void {
-    this.storage.suites.set(suite.id, { ...suite })
-    this.storage.results.set(suite.id, [...suite.results])
-    this.createSnapshot(suite.id)
-    this.updateTrends(suite.id)
+    // Ensure public access properties are set
+    const enhancedSuite = {
+      ...suite,
+      isPublic: suite.isPublic !== false, // Default to public
+      publicAccessLevel: suite.publicAccessLevel || 'full',
+      priority: suite.priority || 'medium',
+      tags: suite.tags || []
+    }
+    
+    this.storage.suites.set(enhancedSuite.id, enhancedSuite)
+    this.storage.results.set(enhancedSuite.id, [...enhancedSuite.results])
+    this.createSnapshot(enhancedSuite.id)
+    this.updateTrends(enhancedSuite.id)
     this.storage.lastUpdated = new Date()
     this.saveToStorage()
   }
@@ -155,8 +164,16 @@ class TestMetricsService {
 
   // Test result management
   addTestResult(suiteId: string, result: ITestResult): void {
+    // Ensure public access properties are set
+    const enhancedResult = {
+      ...result,
+      isPublic: result.isPublic !== false, // Default to public
+      publicAccessLevel: result.publicAccessLevel || 'full',
+      tags: result.tags || []
+    }
+    
     const results = this.storage.results.get(suiteId) || []
-    results.unshift(result)
+    results.unshift(enhancedResult)
 
     // Keep only the most recent results
     if (results.length > this.MAX_RESULTS_PER_SUITE) {
@@ -420,6 +437,161 @@ class TestMetricsService {
         unknown: suites.filter(s => s.status === 'unknown').length
       }
     }
+  }
+
+  // Comprehensive test categorization methods
+  getTestCategorization() {
+    const suites = Array.from(this.storage.suites.values())
+    
+    const byType: Record<string, { suites: number; tests: number; coverage: number; publicSuites: number }> = {}
+    const byCategory: Record<string, { suites: number; tests: number; coverage: number; publicSuites: number }> = {}
+    const byApplication: Record<string, { suites: number; tests: number; coverage: number; publicSuites: number }> = {}
+    const byPriority: Record<string, { suites: number; tests: number; coverage: number }> = {}
+
+    suites.forEach(suite => {
+      // Group by test type
+      if (!byType[suite.testType]) {
+        byType[suite.testType] = { suites: 0, tests: 0, coverage: 0, publicSuites: 0 }
+      }
+      byType[suite.testType].suites++
+      byType[suite.testType].tests += suite.totalTests
+      byType[suite.testType].coverage += suite.coverage.lines.percentage
+      if (suite.isPublic) byType[suite.testType].publicSuites++
+
+      // Group by category
+      if (!byCategory[suite.category]) {
+        byCategory[suite.category] = { suites: 0, tests: 0, coverage: 0, publicSuites: 0 }
+      }
+      byCategory[suite.category].suites++
+      byCategory[suite.category].tests += suite.totalTests
+      byCategory[suite.category].coverage += suite.coverage.lines.percentage
+      if (suite.isPublic) byCategory[suite.category].publicSuites++
+
+      // Group by application
+      if (!byApplication[suite.applicationId]) {
+        byApplication[suite.applicationId] = { suites: 0, tests: 0, coverage: 0, publicSuites: 0 }
+      }
+      byApplication[suite.applicationId].suites++
+      byApplication[suite.applicationId].tests += suite.totalTests
+      byApplication[suite.applicationId].coverage += suite.coverage.lines.percentage
+      if (suite.isPublic) byApplication[suite.applicationId].publicSuites++
+
+      // Group by priority
+      const priority = suite.priority || 'medium'
+      if (!byPriority[priority]) {
+        byPriority[priority] = { suites: 0, tests: 0, coverage: 0 }
+      }
+      byPriority[priority].suites++
+      byPriority[priority].tests += suite.totalTests
+      byPriority[priority].coverage += suite.coverage.lines.percentage
+    })
+
+    // Calculate average coverage for each group
+    Object.keys(byType).forEach(type => {
+      const data = byType[type]
+      data.coverage = data.suites > 0 ? data.coverage / data.suites : 0
+    })
+
+    Object.keys(byCategory).forEach(category => {
+      const data = byCategory[category]
+      data.coverage = data.suites > 0 ? data.coverage / data.suites : 0
+    })
+
+    Object.keys(byApplication).forEach(app => {
+      const data = byApplication[app]
+      data.coverage = data.suites > 0 ? data.coverage / data.suites : 0
+    })
+
+    Object.keys(byPriority).forEach(priority => {
+      const data = byPriority[priority]
+      data.coverage = data.suites > 0 ? data.coverage / data.suites : 0
+    })
+
+    return {
+      byType,
+      byCategory,
+      byApplication,
+      byPriority,
+      totalPublicSuites: suites.filter(s => s.isPublic).length,
+      totalPrivateSuites: suites.filter(s => !s.isPublic).length,
+      publicAccessEnabled: true
+    }
+  }
+
+  // Get public test suites only
+  getPublicTestSuites(): ITestSuite[] {
+    return Array.from(this.storage.suites.values()).filter(suite => suite.isPublic)
+  }
+
+  // Get test suites by category
+  getTestSuitesByCategory(category: string): ITestSuite[] {
+    return Array.from(this.storage.suites.values()).filter(suite => suite.category === category)
+  }
+
+  // Get test suites by type
+  getTestSuitesByType(type: string): ITestSuite[] {
+    return Array.from(this.storage.suites.values()).filter(suite => suite.testType === type)
+  }
+
+  // Get test suites by application
+  getTestSuitesByApplication(applicationId: string): ITestSuite[] {
+    return Array.from(this.storage.suites.values()).filter(suite => suite.applicationId === applicationId)
+  }
+
+  // Get comprehensive coverage by category
+  getCoverageByCategory(): Record<string, ICoverageMetrics> {
+    const suites = Array.from(this.storage.suites.values())
+    const categories: Record<string, ITestSuite[]> = {}
+    
+    suites.forEach(suite => {
+      if (!categories[suite.category]) {
+        categories[suite.category] = []
+      }
+      categories[suite.category].push(suite)
+    })
+
+    const coverageByCategory: Record<string, ICoverageMetrics> = {}
+    
+    Object.keys(categories).forEach(category => {
+      const categorySuites = categories[category]
+      const totals = categorySuites.reduce((acc, suite) => {
+        acc.lines.covered += suite.coverage.lines.covered
+        acc.lines.total += suite.coverage.lines.total
+        acc.branches.covered += suite.coverage.branches.covered
+        acc.branches.total += suite.coverage.branches.total
+        acc.functions.covered += suite.coverage.functions.covered
+        acc.functions.total += suite.coverage.functions.total
+        acc.statements.covered += suite.coverage.statements.covered
+        acc.statements.total += suite.coverage.statements.total
+        return acc
+      }, {
+        lines: { covered: 0, total: 0 },
+        branches: { covered: 0, total: 0 },
+        functions: { covered: 0, total: 0 },
+        statements: { covered: 0, total: 0 }
+      })
+
+      coverageByCategory[category] = {
+        lines: {
+          ...totals.lines,
+          percentage: this.calculatePercentage(totals.lines.covered, totals.lines.total)
+        },
+        branches: {
+          ...totals.branches,
+          percentage: this.calculatePercentage(totals.branches.covered, totals.branches.total)
+        },
+        functions: {
+          ...totals.functions,
+          percentage: this.calculatePercentage(totals.functions.covered, totals.functions.total)
+        },
+        statements: {
+          ...totals.statements,
+          percentage: this.calculatePercentage(totals.statements.covered, totals.statements.total)
+        }
+      }
+    })
+
+    return coverageByCategory
   }
 
   clearStorage(): void {

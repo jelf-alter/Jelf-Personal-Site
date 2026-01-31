@@ -82,18 +82,30 @@ export const useTestingStore = defineStore('testing', () => {
 
   const createMockTestData = async () => {
     const mockTestSuites: ITestSuite[] = [
+      // ELT Pipeline Demo Tests
       {
-        id: 'elt-pipeline-tests',
+        id: 'elt-pipeline-unit-tests',
         applicationId: 'elt-pipeline',
-        name: 'ELT Pipeline Tests',
+        name: 'ELT Pipeline Unit Tests',
+        description: 'Unit tests for ELT pipeline components and logic',
+        testType: 'unit',
+        category: 'demo-application',
+        isPublic: true,
+        publicAccessLevel: 'full',
+        priority: 'high',
+        tags: ['demo', 'pipeline', 'unit-test'],
         testFiles: [
           {
-            id: 'elt-pipeline-unit',
-            filePath: 'src/components/demos/__tests__/ELTPipeline.property.test.ts',
-            testCount: 15,
-            passCount: 14,
+            id: 'elt-pipeline-unit-file',
+            filePath: 'src/components/demos/__tests__/ELTPipeline.test.ts',
+            testCount: 25,
+            passCount: 24,
             failCount: 1,
             skipCount: 0,
+            testType: 'unit',
+            category: 'demo-application',
+            isPublic: true,
+            publicAccessLevel: 'full',
             coverage: {
               lines: { covered: 85, total: 100, percentage: 85 },
               branches: { covered: 20, total: 25, percentage: 80 },
@@ -118,21 +130,32 @@ export const useTestingStore = defineStore('testing', () => {
         skippedTests: 0
       },
       {
-        id: 'landing-page-tests',
-        applicationId: 'landing-page',
-        name: 'Landing Page Tests',
+        id: 'elt-pipeline-property-tests',
+        applicationId: 'elt-pipeline',
+        name: 'ELT Pipeline Property Tests',
+        description: 'Property-based tests for ELT pipeline correctness',
+        testType: 'property',
+        category: 'demo-application',
+        isPublic: true,
+        publicAccessLevel: 'full',
+        priority: 'high',
+        tags: ['demo', 'pipeline', 'property-test'],
         testFiles: [
           {
-            id: 'landing-page-unit',
-            filePath: 'src/components/landing/__tests__/LandingPage.property.test.ts',
-            testCount: 12,
-            passCount: 12,
+            id: 'elt-pipeline-property-file',
+            filePath: 'src/components/demos/__tests__/ELTPipeline.property.test.ts',
+            testCount: 15,
+            passCount: 15,
             failCount: 0,
             skipCount: 0,
+            testType: 'property',
+            category: 'demo-application',
+            isPublic: true,
+            publicAccessLevel: 'full',
             coverage: {
               lines: { covered: 92, total: 100, percentage: 92 },
-              branches: { covered: 18, total: 20, percentage: 90 },
-              functions: { covered: 14, total: 15, percentage: 93.3 },
+              branches: { covered: 22, total: 25, percentage: 88 },
+              functions: { covered: 17, total: 18, percentage: 94.4 },
               statements: { covered: 92, total: 100, percentage: 92 }
             },
             lastRun: new Date()
@@ -140,9 +163,55 @@ export const useTestingStore = defineStore('testing', () => {
         ],
         coverage: {
           lines: { covered: 92, total: 100, percentage: 92 },
-          branches: { covered: 18, total: 20, percentage: 90 },
-          functions: { covered: 14, total: 15, percentage: 93.3 },
+          branches: { covered: 22, total: 25, percentage: 88 },
+          functions: { covered: 17, total: 18, percentage: 94.4 },
           statements: { covered: 92, total: 100, percentage: 92 }
+        },
+        lastRun: new Date(),
+        status: 'passing',
+        results: [],
+        totalTests: 15,
+        passedTests: 15,
+        failedTests: 0,
+        skippedTests: 0
+      },
+      {
+        id: 'landing-page-unit-tests',
+        applicationId: 'landing-page',
+        name: 'Landing Page Unit Tests',
+        description: 'Unit tests for landing page components',
+        testType: 'unit',
+        category: 'core-feature',
+        isPublic: true,
+        publicAccessLevel: 'full',
+        priority: 'high',
+        tags: ['landing-page', 'core', 'unit-test'],
+        testFiles: [
+          {
+            id: 'landing-page-unit-file',
+            filePath: 'src/components/landing/__tests__/*.test.ts',
+            testCount: 18,
+            passCount: 18,
+            failCount: 0,
+            skipCount: 0,
+            testType: 'unit',
+            category: 'core-feature',
+            isPublic: true,
+            publicAccessLevel: 'full',
+            coverage: {
+              lines: { covered: 94, total: 100, percentage: 94 },
+              branches: { covered: 19, total: 20, percentage: 95 },
+              functions: { covered: 14, total: 15, percentage: 93.3 },
+              statements: { covered: 94, total: 100, percentage: 94 }
+            },
+            lastRun: new Date()
+          }
+        ],
+        coverage: {
+          lines: { covered: 94, total: 100, percentage: 94 },
+          branches: { covered: 19, total: 20, percentage: 95 },
+          functions: { covered: 14, total: 15, percentage: 93.3 },
+          statements: { covered: 94, total: 100, percentage: 94 }
         },
         lastRun: new Date(Date.now() - 3600000), // 1 hour ago
         status: 'passing',
@@ -154,16 +223,27 @@ export const useTestingStore = defineStore('testing', () => {
       },
       {
         id: 'api-integration-tests',
-        applicationId: 'api-integration',
+        applicationId: 'backend-api',
         name: 'API Integration Tests',
+        description: 'Integration tests for backend API endpoints',
+        testType: 'integration',
+        category: 'backend',
+        isPublic: true,
+        publicAccessLevel: 'full',
+        priority: 'medium',
+        tags: ['api', 'backend', 'integration-test'],
         testFiles: [
           {
-            id: 'api-integration-unit',
+            id: 'api-integration-file',
             filePath: 'server/__tests__/api-integration.test.ts',
             testCount: 20,
             passCount: 19,
             failCount: 1,
             skipCount: 0,
+            testType: 'integration',
+            category: 'backend',
+            isPublic: true,
+            publicAccessLevel: 'full',
             coverage: {
               lines: { covered: 78, total: 95, percentage: 82.1 },
               branches: { covered: 15, total: 22, percentage: 68.2 },
@@ -185,6 +265,52 @@ export const useTestingStore = defineStore('testing', () => {
         totalTests: 20,
         passedTests: 19,
         failedTests: 1,
+        skippedTests: 0
+      },
+      {
+        id: 'accessibility-property-tests',
+        applicationId: 'accessibility',
+        name: 'Accessibility Property Tests',
+        description: 'Property-based tests for accessibility compliance',
+        testType: 'property',
+        category: 'quality-assurance',
+        isPublic: true,
+        publicAccessLevel: 'full',
+        priority: 'high',
+        tags: ['accessibility', 'quality', 'property-test'],
+        testFiles: [
+          {
+            id: 'accessibility-property-file',
+            filePath: 'src/test/accessibility.property.test.ts',
+            testCount: 8,
+            passCount: 8,
+            failCount: 0,
+            skipCount: 0,
+            testType: 'property',
+            category: 'quality-assurance',
+            isPublic: true,
+            publicAccessLevel: 'full',
+            coverage: {
+              lines: { covered: 88, total: 100, percentage: 88 },
+              branches: { covered: 18, total: 22, percentage: 81.8 },
+              functions: { covered: 16, total: 18, percentage: 88.9 },
+              statements: { covered: 88, total: 100, percentage: 88 }
+            },
+            lastRun: new Date()
+          }
+        ],
+        coverage: {
+          lines: { covered: 88, total: 100, percentage: 88 },
+          branches: { covered: 18, total: 22, percentage: 81.8 },
+          functions: { covered: 16, total: 18, percentage: 88.9 },
+          statements: { covered: 88, total: 100, percentage: 88 }
+        },
+        lastRun: new Date(Date.now() - 7200000), // 2 hours ago
+        status: 'passing',
+        results: [],
+        totalTests: 8,
+        passedTests: 8,
+        failedTests: 0,
         skippedTests: 0
       }
     ]

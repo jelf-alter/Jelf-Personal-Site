@@ -29,6 +29,16 @@
             <option value="e2e">E2E</option>
             <option value="property">Property</option>
           </select>
+          
+          <select v-model="categoryFilter" class="category-filter">
+            <option value="all">All Categories</option>
+            <option value="demo-application">Demo Apps</option>
+            <option value="core-feature">Core Features</option>
+            <option value="backend">Backend</option>
+            <option value="quality-assurance">QA</option>
+            <option value="utilities">Utilities</option>
+            <option value="end-to-end">E2E</option>
+          </select>
         </div>
         
         <div class="action-controls">
@@ -318,6 +328,7 @@ const webSocket = useTestWebSocket()
 const statusFilter = ref<'all' | 'pass' | 'fail' | 'skip'>('all')
 const suiteFilter = ref<string>('all')
 const typeFilter = ref<'all' | 'unit' | 'integration' | 'e2e' | 'property'>('all')
+const categoryFilter = ref<'all' | 'demo-application' | 'core-feature' | 'backend' | 'quality-assurance' | 'utilities' | 'end-to-end'>('all')
 const autoRefresh = ref(true) // Enable auto-refresh by default
 const expandedResults = ref(new Set<string>())
 const currentPage = ref(1)
@@ -357,6 +368,15 @@ const filteredResults = computed((): ITestResult[] => {
   // Apply type filter
   if (typeFilter.value !== 'all') {
     filteredList = filteredList.filter(result => result.testType === typeFilter.value)
+  }
+  
+  // Apply category filter
+  if (categoryFilter.value !== 'all') {
+    filteredList = filteredList.filter(result => {
+      // Find the suite for this result to get its category
+      const suite = testSuites.value.find(s => s.name === result.suite)
+      return suite ? suite.category === categoryFilter.value : false
+    })
   }
   
   // Sort by timestamp (newest first)
