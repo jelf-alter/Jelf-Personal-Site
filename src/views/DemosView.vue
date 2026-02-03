@@ -28,7 +28,7 @@
         <button
           class="filter-btn"
           :class="{ active: selectedCategory === null }"
-          @click="selectedCategory = null"
+          @click="handleCategoryFilter(null)"
           aria-label="Show all demos"
         >
           All Demos
@@ -38,7 +38,7 @@
           :key="category.id"
           class="filter-btn"
           :class="{ active: selectedCategory === category.id }"
-          @click="selectedCategory = category.id"
+          @click="handleCategoryFilter(category.id)"
           :aria-label="`Filter by ${category.name}`"
         >
           <span class="category-icon" v-if="category.icon">{{ category.icon }}</span>
@@ -63,7 +63,7 @@
           role="listitem"
           :aria-labelledby="`demo-title-${demo.id}`"
           :aria-describedby="`demo-description-${demo.id}`"
-          @click="navigateToDemo(demo.id)"
+          @click="handleNavigateToDemo(demo.id)"
         >
           <!-- Primary Showcase Badge -->
           <div class="showcase-badge" v-if="demo.id === 'elt-pipeline'">
@@ -139,7 +139,7 @@
       
       <div v-if="filteredDemos.length === 0" class="no-demos">
         <p>No demos found in this category.</p>
-        <BaseButton variant="primary" @click="selectedCategory = null">
+        <BaseButton variant="primary" @click="handleCategoryFilter(null)">
           View All Demos
         </BaseButton>
       </div>
@@ -155,7 +155,7 @@
           role="listitem"
           :aria-labelledby="`demo-title-${demo.id}`"
           :aria-describedby="`demo-description-${demo.id}`"
-          @click="navigateToDemo(demo.id)"
+          @click="handleNavigateToDemo(demo.id)"
         >
           <div class="demo-header">
             <h3 :id="`demo-title-${demo.id}`">{{ demo.name }}</h3>
@@ -192,7 +192,7 @@
             <BaseButton 
               variant="primary" 
               size="small"
-              @click.stop="navigateToDemo(demo.id)"
+              @click.stop="handleNavigateToDemo(demo.id)"
               :aria-label="`Launch ${demo.name} demo`"
             >
               Launch Demo
@@ -214,17 +214,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useDemosStore } from '@/stores/demos'
+import { useNavigation } from '@/composables/useNavigation'
 import { demoRegistry } from '@/services/demoRegistry'
 import BaseCard from '@/components/common/BaseCard.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 
 const router = useRouter()
+const route = useRoute()
 const demosStore = useDemosStore()
+const { navigateToDemo, navigateToCategory } = useNavigation()
 
 const selectedCategory = ref<string | null>(null)
+
+// Initialize category from route params or props
+const initializeCategory = () => {
+  const categoryFromRoute = route.params.categoryId as string
+  const categoryFromProps = (route.meta as any)?.categoryFilter as string
+  
+  if (categoryFromRoute) {
+    selectedCategory.value = categoryFromRoute
+  } else if (categoryFromProps) {
+    selectedCategory.value = categoryFromProps
+  } else {
+    selectedCategory.value = null
+  }
+}
 
 const featuredDemos = computed(() => demosStore.featuredDemos)
 const categories = computed(() => demosStore.getCategories())
@@ -237,8 +254,13 @@ const filteredDemos = computed(() => {
   return demosStore.activeDemos
 })
 
-const navigateToDemo = (demoId: string) => {
-  router.push(`/demos/${demoId}`)
+const handleNavigateToDemo = (demoId: string) => {
+  navigateToDemo(demoId)
+}
+
+const handleCategoryFilter = (categoryId: string | null) => {
+  selectedCategory.value = categoryId
+  navigateToCategory(categoryId)
 }
 
 const openSource = (sourceUrl: string) => {
@@ -296,6 +318,14 @@ onMounted(async () => {
   if (demosStore.demos.length === 0) {
     await demosStore.loadDemos()
   }
+  
+  // Initialize category from route
+  initializeCategory()
+})
+
+// Watch for route changes to update category
+watch(() => route.params.categoryId, (newCategoryId) => {
+  selectedCategory.value = newCategoryId as string || null
 })
 </script>
 

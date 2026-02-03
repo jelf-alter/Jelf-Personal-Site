@@ -1,6 +1,7 @@
 import { ref, watch, onMounted, onUnmounted, readonly } from 'vue'
 import { useRoute } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
+import { demoRegistry } from '@/services/demoRegistry'
 
 export interface SEOData {
   title?: string
@@ -262,17 +263,90 @@ export function useSEO() {
 // Utility function to generate sitemap data
 export function generateSitemapData() {
   const baseUrl = window.location.origin
-  const routes = [
+  const staticRoutes = [
     { path: '/', priority: '1.0', changefreq: 'weekly' },
     { path: '/demos', priority: '0.9', changefreq: 'weekly' },
     { path: '/testing', priority: '0.8', changefreq: 'daily' },
     { path: '/about', priority: '0.7', changefreq: 'monthly' }
   ]
 
-  return routes.map(route => ({
+  // Add dynamic demo routes
+  const demoRoutes = demoRegistry.getAllDemos().map(demo => ({
+    path: `/demos/${demo.id}`,
+    priority: demo.featured ? '0.8' : '0.6',
+    changefreq: 'monthly',
+    lastmod: demo.lastUpdated.toISOString().split('T')[0]
+  }))
+
+  // Add category routes
+  const categoryRoutes = demoRegistry.getAllCategories().map(category => ({
+    path: `/demos/category/${category.id}`,
+    priority: '0.7',
+    changefreq: 'weekly'
+  }))
+
+  const allRoutes = [...staticRoutes, ...demoRoutes, ...categoryRoutes]
+
+  return allRoutes.map(route => ({
     url: `${baseUrl}${route.path}`,
-    lastmod: new Date().toISOString().split('T')[0],
+    lastmod: route.lastmod || new Date().toISOString().split('T')[0],
     priority: route.priority,
     changefreq: route.changefreq
   }))
+}
+
+// Generate robots.txt content
+export function generateRobotsTxt(): string {
+  const baseUrl = window.location.origin
+  
+  return `User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: ${baseUrl}/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Allow all demo pages
+Allow: /demos/
+Allow: /testing/
+Allow: /about/
+
+# Disallow admin or private areas (if any)
+# Disallow: /admin/
+# Disallow: /private/
+
+# Allow common assets
+Allow: /assets/
+Allow: /images/
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.svg$
+Allow: /*.webp$
+Allow: /*.woff$
+Allow: /*.woff2$
+`
+}
+
+// Generate XML sitemap content
+export function generateXMLSitemap(): string {
+  const sitemapData = generateSitemapData()
+  
+  const urlEntries = sitemapData.map(entry => `
+  <url>
+    <loc>${entry.url}</loc>
+    <lastmod>${entry.lastmod}</lastmod>
+    <changefreq>${entry.changefreq}</changefreq>
+    <priority>${entry.priority}</priority>
+  </url>`).join('')
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urlEntries}
+</urlset>`
 }

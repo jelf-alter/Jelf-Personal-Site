@@ -11,7 +11,55 @@ interface SitemapUrl {
   changefreq: string;
 }
 
-// Generate sitemap data
+// Demo registry data (simplified for server-side use)
+const demoData = [
+  {
+    id: 'elt-pipeline',
+    name: 'ELT Pipeline Visualization',
+    description: 'Interactive demonstration of Extract, Load, Transform data processing with real-time visualization and transparent data flow monitoring',
+    technologies: ['Vue.js', 'WebSockets', 'D3.js', 'Node.js', 'TypeScript'],
+    category: 'data-processing',
+    featured: true,
+    lastUpdated: new Date()
+  },
+  {
+    id: 'websocket-demo',
+    name: 'WebSocket Communication',
+    description: 'Real-time bidirectional communication demonstration with connection management and message broadcasting',
+    technologies: ['Vue.js', 'WebSockets', 'Node.js', 'Socket.IO'],
+    category: 'real-time',
+    featured: false,
+    lastUpdated: new Date()
+  },
+  {
+    id: 'api-testing',
+    name: 'API Testing Tool',
+    description: 'Interactive API testing interface with request/response visualization and comprehensive HTTP method support',
+    technologies: ['Vue.js', 'Axios', 'JSON', 'REST'],
+    category: 'development-tools',
+    featured: false,
+    lastUpdated: new Date()
+  },
+  {
+    id: 'realtime-dashboard',
+    name: 'Real-time Dashboard',
+    description: 'Live data dashboard with WebSocket connections, interactive charts, and performance monitoring',
+    technologies: ['Vue.js', 'WebSockets', 'Chart.js', 'D3.js'],
+    category: 'data-visualization',
+    featured: false,
+    lastUpdated: new Date()
+  }
+];
+
+const categoryData = [
+  { id: 'data-processing', name: 'Data Processing' },
+  { id: 'real-time', name: 'Real-time Applications' },
+  { id: 'data-visualization', name: 'Data Visualization' },
+  { id: 'development-tools', name: 'Development Tools' },
+  { id: 'testing', name: 'Testing & Quality' }
+];
+
+// Generate comprehensive sitemap data
 const generateSitemapData = (): SitemapUrl[] => {
   const baseUrl = process.env.NODE_ENV === 'production' 
     ? 'https://your-domain.com' // Replace with actual domain
@@ -19,7 +67,8 @@ const generateSitemapData = (): SitemapUrl[] => {
     
   const currentDate: string = new Date().toISOString().split('T')[0] || new Date().toISOString().substring(0, 10);
   
-  return [
+  // Static routes
+  const staticRoutes: SitemapUrl[] = [
     {
       url: `${baseUrl}/`,
       lastmod: currentDate,
@@ -30,12 +79,6 @@ const generateSitemapData = (): SitemapUrl[] => {
       url: `${baseUrl}/demos`,
       lastmod: currentDate,
       priority: '0.9',
-      changefreq: 'weekly'
-    },
-    {
-      url: `${baseUrl}/demos/elt-pipeline`,
-      lastmod: currentDate,
-      priority: '0.8',
       changefreq: 'weekly'
     },
     {
@@ -51,6 +94,24 @@ const generateSitemapData = (): SitemapUrl[] => {
       changefreq: 'monthly'
     }
   ];
+
+  // Dynamic demo routes
+  const demoRoutes: SitemapUrl[] = demoData.map(demo => ({
+    url: `${baseUrl}/demos/${demo.id}`,
+    lastmod: demo.lastUpdated.toISOString().split('T')[0],
+    priority: demo.featured ? '0.8' : '0.6',
+    changefreq: 'monthly'
+  }));
+
+  // Category routes
+  const categoryRoutes: SitemapUrl[] = categoryData.map(category => ({
+    url: `${baseUrl}/demos/category/${category.id}`,
+    lastmod: currentDate,
+    priority: '0.7',
+    changefreq: 'weekly'
+  }));
+
+  return [...staticRoutes, ...demoRoutes, ...categoryRoutes];
 };
 
 // Generate XML sitemap
@@ -168,30 +229,68 @@ router.get('/meta', (req: Request, res: Response) => {
         type: 'website'
       },
       'demos': {
-        title: 'Demos - Personal Website',
-        description: 'Interactive demonstrations of various technologies and development capabilities',
-        keywords: 'demos, applications, Vue.js, TypeScript, ELT pipeline, data processing',
+        title: 'Interactive Demos - Personal Website',
+        description: 'Explore interactive demonstrations of various technologies including data processing, real-time applications, and development tools',
+        keywords: 'demos, applications, Vue.js, TypeScript, ELT pipeline, data processing, real-time, WebSocket',
         type: 'website'
-      },
-      'demos/elt-pipeline': {
-        title: 'ELT Pipeline Demo - Personal Website',
-        description: 'Interactive demonstration of Extract, Load, Transform data processing pipeline with real-time visualization',
-        keywords: 'ELT pipeline, data processing, extract, load, transform, visualization',
-        type: 'article'
       },
       'testing': {
         title: 'Testing Dashboard - Personal Website',
-        description: 'Public visibility into code quality, test coverage, and testing practices',
-        keywords: 'testing, code quality, coverage, unit tests, integration tests',
+        description: 'Public visibility into code quality, test coverage, and comprehensive testing practices including unit tests, integration tests, and property-based testing',
+        keywords: 'testing, code quality, coverage, unit tests, integration tests, property-based testing, TDD, BDD',
         type: 'website'
       },
       'about': {
         title: 'About - Personal Website',
-        description: 'Learn more about the developer and the technologies used in this website',
-        keywords: 'about, developer, technologies, Vue.js, TypeScript, full-stack',
+        description: 'Learn about the developer, technologies used, and the development approach behind this comprehensive portfolio website',
+        keywords: 'about, developer, technologies, Vue.js, TypeScript, full-stack, architecture, methodology',
         type: 'profile'
       }
     };
+
+    // Handle dynamic demo routes
+    const demoMatch = path.match(/^demos\/([a-z0-9-]+)$/);
+    if (demoMatch) {
+      const demoId = demoMatch[1];
+      const demo = demoData.find(d => d.id === demoId);
+      
+      if (demo) {
+        metaData[path] = {
+          title: `${demo.name} - Interactive Demo - Personal Website`,
+          description: `${demo.description} Built with ${demo.technologies.join(', ')}.`,
+          keywords: `${demo.name}, demo, ${demo.technologies.join(', ')}, ${demo.category}`,
+          type: 'article'
+        };
+      }
+    }
+
+    // Handle category routes
+    const categoryMatch = path.match(/^demos\/category\/([a-z0-9-]+)$/);
+    if (categoryMatch) {
+      const categoryId = categoryMatch[1];
+      const category = categoryData.find(c => c.id === categoryId);
+      
+      if (category) {
+        metaData[path] = {
+          title: `${category.name} Demos - Personal Website`,
+          description: `Explore interactive demonstrations in the ${category.name} category. Discover various technologies and development capabilities.`,
+          keywords: `${category.name}, demos, ${categoryId}, interactive, development`,
+          type: 'website'
+        };
+      }
+    }
+
+    // Handle test suite routes
+    const testMatch = path.match(/^testing\/([a-z0-9-]+)$/);
+    if (testMatch) {
+      const suiteId = testMatch[1];
+      metaData[path] = {
+        title: `${suiteId} Test Suite - Testing Dashboard - Personal Website`,
+        description: `Detailed test results and coverage for the ${suiteId} test suite`,
+        keywords: `testing, ${suiteId}, test suite, coverage, results`,
+        type: 'article'
+      };
+    }
 
     const meta = metaData[path] || metaData[''];
     
@@ -200,7 +299,8 @@ router.get('/meta', (req: Request, res: Response) => {
       url: `${baseUrl}/${path}`,
       image: `${baseUrl}/og-image.jpg`,
       siteName: 'Personal Website',
-      author: 'Full-Stack Developer'
+      author: 'Full-Stack Developer',
+      canonical: `${baseUrl}/${path}`
     });
   } catch (error) {
     console.error('Error generating meta data:', error);
