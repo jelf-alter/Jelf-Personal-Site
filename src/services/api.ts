@@ -61,10 +61,15 @@ class ApiService {
     return this.request('/demo/elt/datasets')
   }
 
-  async executeELTPipeline(datasetId: string, config?: any) {
+  async executeELTPipeline(datasetId: string | any, config?: any) {
+    // Handle both string datasetId and object with datasetId property
+    const payload = typeof datasetId === 'string' 
+      ? { datasetId, config }
+      : datasetId; // If it's already an object, use it directly
+      
     return this.request('/demo/elt/execute', {
       method: 'POST',
-      body: JSON.stringify({ datasetId, config }),
+      body: JSON.stringify(payload),
     })
   }
 
@@ -189,10 +194,14 @@ export const api = {
   getTestResults: (suiteId: string, limit?: number) => 
     apiService.getTestResults(suiteId, limit),
   getTestCoverage: (suiteId?: string) => apiService.getTestCoverage(suiteId),
+  getCoverage: (suiteId?: string) => apiService.getTestCoverage(suiteId), // Alias for tests
   getTestTrends: (suiteId?: string, period?: string) => 
     apiService.getTestTrends(suiteId, period),
   getTestMetrics: () => apiService.getTestMetrics(),
   runAllTests: (options?: any) => apiService.runTests(options),
+  getDemoApplications: () => apiService.getAllDemos(), // Alias for tests
+  executeELTPipeline: (pipelineConfig: any) => 
+    apiService.executeELTPipeline(pipelineConfig.datasetId, pipelineConfig),
   
   // Public test data API functions (no authentication required)
   getPublicTestSuites: () => apiService.getPublicTestSuites(),
