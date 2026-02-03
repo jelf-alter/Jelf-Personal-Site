@@ -167,7 +167,7 @@ This implementation plan breaks down the personal website and demo platform into
     - **Property 8: Test Failure Transparency**
     - **Validates: Requirements 3.5**
 
-  - [ ] 7.8 Write property tests for public test accessibility
+  - [x] 7.8 Write property tests for public test accessibility
 
     - **Property 9: Public Test Accessibility**
     - **Validates: Requirements 5.1, 5.4**
