@@ -5,8 +5,7 @@ import type {
   IPipelineExecution, 
   IPipelineStep, 
   IDataset, 
-  IPipelineConfig,
-  IPipelineEvent
+  IPipelineConfig
 } from '@/types'
 
 export const useELTPipelineStore = defineStore('eltPipeline', () => {
@@ -707,7 +706,12 @@ export const useELTPipelineStore = defineStore('eltPipeline', () => {
     }
   }
 
-  const getRecoveryOptions = (execution: IPipelineExecution) => {
+  const getRecoveryOptions = (execution: IPipelineExecution): Array<{
+    strategy: 'retry' | 'restart' | 'skip'
+    label: string
+    description: string
+    risk: string
+  }> => {
     if (!execution || execution.status !== 'failed') {
       return []
     }
@@ -717,7 +721,12 @@ export const useELTPipelineStore = defineStore('eltPipeline', () => {
       return []
     }
 
-    const options = [
+    const options: Array<{
+      strategy: 'retry' | 'restart' | 'skip'
+      label: string
+      description: string
+      risk: string
+    }> = [
       {
         strategy: 'retry' as const,
         label: 'Retry Failed Step',

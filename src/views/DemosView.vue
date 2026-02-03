@@ -199,7 +199,7 @@
             </BaseButton>
             <BaseButton 
               v-if="demo.sourceUrl" 
-              variant="outline" 
+              variant="secondary" 
               size="small"
               @click.stop="openSource(demo.sourceUrl)"
               :aria-label="`View source code for ${demo.name}`"

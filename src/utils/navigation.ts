@@ -23,53 +23,59 @@ export class NavigationHelper {
   /**
    * Navigate to a demo with proper URL structure
    */
-  navigateToDemo(demoId: string): Promise<void> {
+  async navigateToDemo(demoId: string): Promise<void> {
     if (!URL_PATTERNS.DEMO_ID.test(demoId)) {
       console.warn(`Invalid demo ID format: ${demoId}`)
-      return this.router.push({ name: 'not-found' })
+      await this.router.push({ name: 'not-found' })
+      return
     }
 
     const demo = demoRegistry.getDemo(demoId)
     if (!demo) {
       console.warn(`Demo not found: ${demoId}`)
-      return this.router.push({ name: 'not-found' })
+      await this.router.push({ name: 'not-found' })
+      return
     }
 
-    return this.router.push(`/demos/${demoId}`)
+    await this.router.push(`/demos/${demoId}`)
   }
 
   /**
    * Navigate to a demo category with proper URL structure
    */
-  navigateToCategory(categoryId: string | null): Promise<void> {
+  async navigateToCategory(categoryId: string | null): Promise<void> {
     if (categoryId === null) {
-      return this.router.push('/demos')
+      await this.router.push('/demos')
+      return
     }
 
     if (!URL_PATTERNS.CATEGORY_ID.test(categoryId)) {
       console.warn(`Invalid category ID format: ${categoryId}`)
-      return this.router.push('/demos')
+      await this.router.push('/demos')
+      return
     }
 
     const category = demoRegistry.getCategory(categoryId)
     if (!category) {
       console.warn(`Category not found: ${categoryId}`)
-      return this.router.push('/demos')
+      await this.router.push('/demos')
+      return
     }
 
-    return this.router.push(`/demos/category/${categoryId}`)
+    await this.router.push(`/demos/category/${categoryId}`)
   }
 
   /**
    * Navigate to a test suite with proper URL structure
    */
-  navigateToTestSuite(suiteId: string): Promise<void> {
+  async navigateToTestSuite(suiteId: string): Promise<void> {
     if (!URL_PATTERNS.SUITE_ID.test(suiteId)) {
       console.warn(`Invalid suite ID format: ${suiteId}`)
-      return this.router.push({ name: 'not-found' })
+      await this.router.push({ name: 'not-found' })
+      return
     }
 
-    return this.router.push(`/testing/${suiteId}`)
+    await this.router.push(`/testing/${suiteId}`)
   }
 
   /**
@@ -96,11 +102,12 @@ export class NavigationHelper {
   /**
    * Navigate with proper history handling
    */
-  navigateWithHistory(to: RouteLocationRaw, replace = false): Promise<void> {
+  async navigateWithHistory(to: RouteLocationRaw, replace = false): Promise<void> {
     if (replace) {
-      return this.router.replace(to)
+      await this.router.replace(to)
+      return
     }
-    return this.router.push(to)
+    await this.router.push(to)
   }
 
   /**
@@ -227,8 +234,19 @@ export const generateBreadcrumbs = (path: string) => {
 export const preloadRoute = async (router: Router, routeName: string): Promise<void> => {
   try {
     const route = router.getRoutes().find(r => r.name === routeName)
-    if (route && typeof route.component === 'function') {
-      await route.component()
+    if (route && route.components?.default) {
+      const component = route.components.default
+      // Only call if it's a lazy-loaded function that returns a promise
+      if (typeof component === 'function') {
+        try {
+          const result = (component as any)()
+          if (result && typeof result.then === 'function') {
+            await result
+          }
+        } catch {
+          // Ignore errors for non-async components
+        }
+      }
     }
   } catch (error) {
     console.warn(`Failed to preload route ${routeName}:`, error)

@@ -128,9 +128,11 @@ const onDemoLoaded = async (demo: IDemoApplication) => {
     const demoConfig = demoRegistry.getDemo(demo.id)
     if (demoConfig?.component) {
       if (typeof demoConfig.component === 'function') {
-        const componentModule = await demoConfig.component()
+        // Handle dynamic import function
+        const componentModule = await (demoConfig.component as () => Promise<any>)()
         demoComponent.value = componentModule.default || componentModule
       } else {
+        // Handle direct component reference
         demoComponent.value = demoConfig.component
       }
     } else {
@@ -183,7 +185,6 @@ onMounted(() => {
     demosStore.loadDemos()
   }
 })
-</script>
 </script>
 
 <style scoped>

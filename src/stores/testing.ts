@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ITestSuite, ITestResult, ICoverageMetrics } from '@/types'
-import { testMetricsService, type ITestMetricsSnapshot, type ITestTrend } from '@/services/testMetrics'
+import { testMetricsService } from '@/services/testMetrics'
 import { api } from '@/services/api'
 
 export const useTestingStore = defineStore('testing', () => {
@@ -54,12 +54,12 @@ export const useTestingStore = defineStore('testing', () => {
       // Try to load from API first
       const response = await api.getTestSuites()
       
-      if (response.success && response.data) {
+      if (response.success && response.data && Array.isArray(response.data)) {
         // Update local storage with API data
         response.data.forEach((suite: ITestSuite) => {
           testMetricsService.addTestSuite(suite)
         })
-        testSuites.value = response.data
+        testSuites.value = response.data as ITestSuite[]
       } else {
         // Fall back to local storage
         testSuites.value = testMetricsService.getAllTestSuites()
@@ -356,7 +356,8 @@ export const useTestingStore = defineStore('testing', () => {
     }
   }
 
-  const mockTestExecution = async (suiteId?: string) => {
+  // Mock test execution function (unused but kept for potential future use)
+  // const _mockTestExecution = async (suiteId?: string) => {
     // Simulate test execution time
     await new Promise(resolve => setTimeout(resolve, 2000))
     
@@ -396,7 +397,10 @@ export const useTestingStore = defineStore('testing', () => {
           }
         },
         timestamp: now,
-        testType: 'unit'
+        testType: 'unit',
+        category: 'demo-application',
+        isPublic: true,
+        publicAccessLevel: 'full'
       }
 
       // Calculate percentages

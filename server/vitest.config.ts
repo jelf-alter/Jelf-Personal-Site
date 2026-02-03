@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     testTimeout: 10000,
     include: [
-      'server/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts}'
+      '**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts}'
     ],
     exclude: [
       'src/**/*'

@@ -1,9 +1,7 @@
 import type { 
   ITestResult, 
   ITestSuite, 
-  ICoverageMetrics, 
-  ITestFile,
-  IApiResponse 
+  ICoverageMetrics
 } from '@/types'
 
 // Extended interfaces for test metrics collection
