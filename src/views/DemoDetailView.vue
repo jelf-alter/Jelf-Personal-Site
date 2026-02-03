@@ -60,7 +60,7 @@ const { setSEO, addStructuredData } = useSEO()
 const demoComponent = ref<Component | null>(null)
 const componentError = ref<string | null>(null)
 
-const demoId = computed(() => route.params.id as string)
+const demoId = computed(() => route.params.demoId as string)
 
 const addDemoStructuredData = (demo: IDemoApplication) => {
   // Software Application structured data
@@ -169,7 +169,7 @@ const onDemoComponentError = (error: string) => {
 }
 
 // Watch for route changes to handle navigation between demos
-watch(() => route.params.id, (newId, oldId) => {
+watch(() => route.params.demoId, (newId, oldId) => {
   if (newId !== oldId) {
     // Reset component state when navigating to a different demo
     demoComponent.value = null

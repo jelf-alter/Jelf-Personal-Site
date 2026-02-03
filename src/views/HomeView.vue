@@ -143,7 +143,6 @@ onMounted(async () => {
   addHomePageStructuredData()
 })
 </script>
-</script>
 
 <style scoped>
 .home {
