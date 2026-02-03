@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import { demoRegistry } from '@/services/demoRegistry'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -28,6 +29,23 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: 'Demo Detail - Personal Website',
       description: 'Detailed view of a specific demo application'
+    },
+    beforeEnter: (to, _from, next) => {
+      // Validate that the demo exists
+      const demoId = to.params.id as string
+      const demo = demoRegistry.getDemo(demoId)
+      
+      if (!demo) {
+        // Demo not found, redirect to 404
+        next({ name: 'not-found' })
+        return
+      }
+      
+      // Update meta tags with demo-specific information
+      to.meta.title = `${demo.name} - Demo - Personal Website`
+      to.meta.description = demo.description
+      
+      next()
     }
   },
   {
