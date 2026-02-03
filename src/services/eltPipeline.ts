@@ -1,5 +1,4 @@
 import type { 
-  IELTPipeline, 
   IPipelineExecution, 
   IDataset, 
   IPipelineConfig,
@@ -12,7 +11,7 @@ export class ELTPipelineService {
    * Get all available sample datasets
    */
   async getSampleDatasets(): Promise<IApiResponse<IDataset[]>> {
-    return apiService.getSampleDatasets()
+    return apiService.getSampleDatasets() as Promise<IApiResponse<IDataset[]>>
   }
 
   /**
@@ -22,14 +21,14 @@ export class ELTPipelineService {
     datasetId: string, 
     config?: Partial<IPipelineConfig>
   ): Promise<IApiResponse<IPipelineExecution>> {
-    return apiService.executeELTPipeline(datasetId, config)
+    return apiService.executeELTPipeline(datasetId, config) as Promise<IApiResponse<IPipelineExecution>>
   }
 
   /**
    * Get pipeline execution status
    */
   async getExecutionStatus(executionId: string): Promise<IApiResponse<IPipelineExecution>> {
-    return apiService.getPipelineStatus(executionId)
+    return apiService.getPipelineStatus(executionId) as Promise<IApiResponse<IPipelineExecution>>
   }
 
   /**
@@ -162,7 +161,7 @@ export class ELTPipelineService {
       })
     }
 
-    const sampleData = Array.from({ length: recordCount }, generators[type])
+    const sampleData = Array.from({ length: recordCount }, () => generators[type]())
     const firstRecord = sampleData[0]
     const schema = Object.keys(firstRecord).reduce((acc, key) => {
       acc[key] = typeof firstRecord[key as keyof typeof firstRecord]

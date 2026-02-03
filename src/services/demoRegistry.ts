@@ -591,6 +591,3 @@ This demo demonstrates:
 
 // Create singleton instance
 export const demoRegistry = new DemoRegistry()
-
-// Export types
-export type { IDemoConfig, IDemoCategory }

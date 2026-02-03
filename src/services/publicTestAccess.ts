@@ -250,9 +250,25 @@ class PublicTestAccessService {
       overallSuccessRate: number
       averageCoverage: ICoverageMetrics
     }
-    categorization: ReturnType<typeof this.getPublicTestCategorization>
+    categorization: {
+      byType: Record<string, { suites: number; tests: number; coverage: number }>
+      byCategory: Record<string, { suites: number; tests: number; coverage: number }>
+      byApplication: Record<string, { suites: number; tests: number; coverage: number }>
+      totalPublicSuites: number
+      totalPublicTests: number
+      publicAccessLevel: string
+    }
     recentResults: ITestResult[]
-    metadata: ReturnType<typeof this.getPublicAccessMetadata>
+    metadata: {
+      accessEnabled: boolean
+      accessLevel: string
+      allowedCategories: string[]
+      allowedTypes: string[]
+      dataAnonymized: boolean
+      failureDetailsHidden: boolean
+      lastUpdated: string
+      disclaimer: string
+    }
   } {
     const publicSuites = this.filterPublicTestSuites(suites)
     const publicResults = this.filterPublicTestResults(results)
@@ -367,7 +383,7 @@ class PublicTestAccessService {
   /**
    * Validate public access request (for rate limiting)
    */
-  validatePublicAccess(clientId?: string): { allowed: boolean; reason?: string } {
+  validatePublicAccess(_clientId?: string): { allowed: boolean; reason?: string } {
     if (!this.config.enabled) {
       return { allowed: false, reason: 'Public access is disabled' }
     }

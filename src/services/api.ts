@@ -200,8 +200,6 @@ export const api = {
   getTestMetrics: () => apiService.getTestMetrics(),
   runAllTests: (options?: any) => apiService.runTests(options),
   getDemoApplications: () => apiService.getAllDemos(), // Alias for tests
-  executeELTPipeline: (pipelineConfig: any) => 
-    apiService.executeELTPipeline(pipelineConfig.datasetId, pipelineConfig),
   
   // Public test data API functions (no authentication required)
   getPublicTestSuites: () => apiService.getPublicTestSuites(),

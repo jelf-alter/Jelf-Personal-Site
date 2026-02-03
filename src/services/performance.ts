@@ -159,7 +159,6 @@ class PerformanceService {
     if (!window.performance || !window.performance.timing) return
 
     const timing = window.performance.timing
-    const navigation = window.performance.navigation
 
     const metrics = {
       loadTime: timing.loadEventEnd - timing.navigationStart,
@@ -305,8 +304,8 @@ class PerformanceService {
     }
 
     // Example: Send to Google Analytics 4
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'core_web_vitals', {
+    if (typeof (window as any).gtag !== 'undefined') {
+      (window as any).gtag('event', 'core_web_vitals', {
         lcp: metrics.coreWebVitals.lcp,
         fid: metrics.coreWebVitals.fid,
         cls: metrics.coreWebVitals.cls,
@@ -411,6 +410,3 @@ class PerformanceService {
 
 // Export singleton instance
 export const performanceService = new PerformanceService()
-
-// Export types
-export type { PerformanceMetrics, CoreWebVitals, PerformanceThresholds }
