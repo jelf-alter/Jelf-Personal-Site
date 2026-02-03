@@ -203,11 +203,13 @@ This implementation plan breaks down the personal website and demo platform into
     - Ensure proper handling of direct URL access and browser navigation
     - _Requirements: 8.5_
 
-  - [ ]* 9.3 Write property tests for SEO implementation
+  - [x] 9.3 Write property tests for SEO implementation
+
     - **Property 16: SEO Implementation**
     - **Validates: Requirements 7.2, 7.6**
 
-  - [ ]* 9.4 Write property tests for SPA routing behavior
+  - [x] 9.4 Write property tests for SPA routing behavior
+
     - **Property 13: SPA Routing Behavior**
     - **Validates: Requirements 8.5**
 
