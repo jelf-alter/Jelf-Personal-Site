@@ -1,104 +1,135 @@
 <template>
-  <div class="demo-detail">
-    <div v-if="isLoading" class="loading-container">
-      <LoadingSpinner size="large" message="Loading demo..." />
-    </div>
+  <div class="demo-detail-view">
+    <DemoContainer
+      v-if="demoId"
+      :demo-id="demoId"
+      :is-active="true"
+      :show-tests-link="true"
+      :show-footer="true"
+      @demo-loaded="onDemoLoaded"
+      @demo-error="onDemoError"
+      @retry="onRetry"
+      @fullscreen-toggle="onFullscreenToggle"
+    >
+      <!-- Dynamic demo component loading -->
+      <template #default="{ demo, isActive, isFullScreen, config }">
+        <Suspense>
+          <component
+            v-if="demoComponent"
+            :is="demoComponent"
+            :demo="demo"
+            :is-active="isActive"
+            :is-full-screen="isFullScreen"
+            :config="config"
+            @error="onDemoComponentError"
+          />
+          <template #fallback>
+            <div class="demo-loading">
+              <LoadingSpinner size="large" message="Loading demo component..." />
+            </div>
+          </template>
+        </Suspense>
+      </template>
+    </DemoContainer>
     
-    <div v-else-if="demo" class="demo-content">
-      <header class="demo-header">
-        <div class="demo-breadcrumb">
-          <RouterLink to="/demos" class="breadcrumb-link">← Back to Demos</RouterLink>
-        </div>
-        
-        <h1>{{ demo.name }}</h1>
-        <p class="demo-description">{{ demo.description }}</p>
-        
-        <div class="demo-meta">
-          <div class="demo-status" :class="`status-${demo.status}`">
-            {{ demo.status }}
-          </div>
-          <div class="demo-category">{{ demo.category }}</div>
-        </div>
-        
-        <div class="demo-technologies">
-          <span v-for="tech in demo.technologies" :key="tech" class="tech-tag">
-            {{ tech }}
-          </span>
-        </div>
-      </header>
-      
-      <main class="demo-main">
-        <div class="demo-placeholder">
-          <h2>Demo Application</h2>
-          <p>This demo will be implemented in later tasks.</p>
-          <p><strong>Technologies:</strong> {{ demo.technologies.join(', ') }}</p>
-          <p><strong>Status:</strong> {{ demo.status }}</p>
-          
-          <div class="demo-actions">
-            <BaseButton 
-              v-if="demo.sourceUrl" 
-              variant="secondary" 
-              @click="openSource"
-            >
-              View Source Code
-            </BaseButton>
-            <BaseButton 
-              variant="primary" 
-              disabled
-            >
-              Launch Demo (Coming Soon)
-            </BaseButton>
-          </div>
-        </div>
-      </main>
-    </div>
-    
+    <!-- Error state when demo ID is missing -->
     <div v-else class="error-container">
-      <h1>Demo Not Found</h1>
-      <p>The requested demo could not be found.</p>
+      <h1>Invalid Demo</h1>
+      <p>No demo ID provided in the URL.</p>
       <RouterLink to="/demos" class="back-link">← Back to Demos</RouterLink>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useDemosStore } from '@/stores/demos'
+import { demoRegistry } from '@/services/demoRegistry'
+import type { IDemoApplication } from '@/types'
+import type { Component } from 'vue'
+import DemoContainer from '@/components/demos/DemoContainer.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
 
 const route = useRoute()
+const router = useRouter()
 const demosStore = useDemosStore()
 
-const isLoading = ref(true)
+const demoComponent = ref<Component | null>(null)
+const componentError = ref<string | null>(null)
 
-const demo = computed(() => {
-  const demoId = route.params.id as string
-  return demosStore.getDemoById(demoId)
-})
+const demoId = computed(() => route.params.id as string)
 
-const openSource = () => {
-  if (demo.value?.sourceUrl) {
-    window.open(demo.value.sourceUrl, '_blank')
+const onDemoLoaded = async (demo: IDemoApplication) => {
+  console.log('Demo loaded:', demo.name)
+  
+  // Load the demo component dynamically
+  try {
+    const demoConfig = demoRegistry.getDemo(demo.id)
+    if (demoConfig?.component) {
+      if (typeof demoConfig.component === 'function') {
+        const componentModule = await demoConfig.component()
+        demoComponent.value = componentModule.default || componentModule
+      } else {
+        demoComponent.value = demoConfig.component
+      }
+    } else {
+      console.warn(`No component configured for demo: ${demo.id}`)
+      demoComponent.value = null
+    }
+  } catch (error) {
+    console.error('Failed to load demo component:', error)
+    componentError.value = error instanceof Error ? error.message : 'Failed to load demo component'
+    demoComponent.value = null
   }
 }
 
-onMounted(async () => {
-  if (demosStore.demos.length === 0) {
-    await demosStore.loadDemos()
+const onDemoError = (error: string) => {
+  console.error('Demo error:', error)
+  // Error is handled by DemoContainer
+}
+
+const onRetry = () => {
+  // Reset component state and retry
+  demoComponent.value = null
+  componentError.value = null
+  
+  // Reload the page to retry demo loading
+  router.go(0)
+}
+
+const onFullscreenToggle = (isFullScreen: boolean) => {
+  console.log('Fullscreen toggled:', isFullScreen)
+  // Handle fullscreen state changes if needed
+}
+
+const onDemoComponentError = (error: string) => {
+  console.error('Demo component error:', error)
+  componentError.value = error
+}
+
+// Watch for route changes to handle navigation between demos
+watch(() => route.params.id, (newId, oldId) => {
+  if (newId !== oldId) {
+    // Reset component state when navigating to a different demo
+    demoComponent.value = null
+    componentError.value = null
   }
-  isLoading.value = false
+})
+
+onMounted(() => {
+  // Ensure demos are loaded when component mounts
+  if (demosStore.demos.length === 0) {
+    demosStore.loadDemos()
+  }
 })
 </script>
 
 <style scoped>
-.demo-detail {
-  max-width: 1200px;
-  margin: 0 auto;
+.demo-detail-view {
+  min-height: 100vh;
 }
 
-.loading-container,
 .error-container {
   display: flex;
   flex-direction: column;
@@ -106,115 +137,12 @@ onMounted(async () => {
   justify-content: center;
   min-height: 400px;
   text-align: center;
+  padding: 2rem;
 }
 
-.demo-breadcrumb {
+.error-container h1 {
+  color: #e74c3c;
   margin-bottom: 1rem;
-}
-
-.breadcrumb-link {
-  color: #3498db;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.breadcrumb-link:hover {
-  text-decoration: underline;
-}
-
-.demo-header h1 {
-  margin-bottom: 1rem;
-  color: #2c3e50;
-}
-
-.demo-description {
-  font-size: 1.1rem;
-  color: #7f8c8d;
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-}
-
-.demo-meta {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.demo-status {
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.status-active {
-  background-color: #27ae60;
-  color: white;
-}
-
-.status-maintenance {
-  background-color: #f39c12;
-  color: white;
-}
-
-.status-archived {
-  background-color: #95a5a6;
-  color: white;
-}
-
-.demo-category {
-  padding: 0.25rem 0.75rem;
-  background-color: #ecf0f1;
-  color: #2c3e50;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.demo-technologies {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-}
-
-.tech-tag {
-  background-color: #3498db;
-  color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.demo-main {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.demo-placeholder {
-  padding: 3rem;
-  text-align: center;
-  color: #7f8c8d;
-}
-
-.demo-placeholder h2 {
-  color: #2c3e50;
-  margin-bottom: 1rem;
-}
-
-.demo-placeholder p {
-  margin-bottom: 1rem;
-}
-
-.demo-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 2rem;
 }
 
 .back-link {
@@ -228,15 +156,12 @@ onMounted(async () => {
   text-decoration: underline;
 }
 
-@media (max-width: 768px) {
-  .demo-meta {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .demo-actions {
-    flex-direction: column;
-    align-items: center;
-  }
+.demo-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  padding: 2rem;
 }
 </style>
