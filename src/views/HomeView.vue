@@ -20,12 +20,14 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useSEO } from '@/composables/useSEO'
 import HeroSection from '@/components/landing/HeroSection.vue'
 import SkillsShowcase from '@/components/landing/SkillsShowcase.vue'
 import type { ISkill } from '@/types'
 
 const router = useRouter()
 const userStore = useUserStore()
+const { setSEO, addStructuredData } = useSEO()
 
 // Computed properties
 const personalInfo = computed(() => {
@@ -82,13 +84,65 @@ const handleSkillClick = (skill: ISkill) => {
   console.log('Skill clicked:', skill.name)
 }
 
+// Add structured data for the homepage
+const addHomePageStructuredData = () => {
+  const profile = userStore.profile
+  if (!profile) return
+
+  // Person structured data
+  const personData = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: profile.name,
+    jobTitle: profile.title,
+    description: profile.summary,
+    url: window.location.origin,
+    email: profile.email,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: profile.location
+    },
+    knowsAbout: skills.value.map(skill => skill.name),
+    hasOccupation: {
+      '@type': 'Occupation',
+      name: profile.title,
+      occupationLocation: {
+        '@type': 'Place',
+        name: profile.location
+      }
+    }
+  }
+
+  // Website structured data
+  const websiteData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Personal Website',
+    description: 'Professional portfolio showcasing full-stack development capabilities',
+    url: window.location.origin,
+    author: {
+      '@type': 'Person',
+      name: profile.name
+    },
+    mainEntity: {
+      '@id': `${window.location.origin}#person`
+    }
+  }
+
+  addStructuredData([personData, websiteData])
+}
+
 // Lifecycle
 onMounted(async () => {
   // Load user profile data
   if (!userStore.isProfileLoaded) {
     await userStore.loadProfile()
   }
+  
+  // Add structured data after profile is loaded
+  addHomePageStructuredData()
 })
+</script>
 </script>
 
 <style scoped>

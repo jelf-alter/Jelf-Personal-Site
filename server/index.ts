@@ -7,6 +7,7 @@ import { demoRoutes } from './routes/demo.js';
 import { configRoutes } from './routes/config.js';
 import { websocketRoutes } from './routes/websocket.js';
 import { testRoutes } from './routes/test.js';
+import { seoRoutes } from './routes/seo.js';
 import { webSocketService } from './services/WebSocketService.js';
 
 const app = express();
@@ -64,6 +65,16 @@ app.use('/api/demo', demoRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/ws', websocketRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/seo', seoRoutes);
+
+// SEO files at root level
+app.get('/sitemap.xml', (req, res) => {
+  res.redirect('/api/seo/sitemap.xml');
+});
+
+app.get('/robots.txt', (req, res) => {
+  res.redirect('/api/seo/robots.txt');
+});
 
 // WebSocket stats endpoint (legacy - now available via /api/ws/stats)
 app.get('/api/ws/stats', (req, res) => {
