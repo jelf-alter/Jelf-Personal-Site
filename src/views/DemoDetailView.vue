@@ -45,6 +45,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDemosStore } from '@/stores/demos'
+import { useSEO } from '@/composables/useSEO'
 import { demoRegistry } from '@/services/demoRegistry'
 import type { IDemoApplication } from '@/types'
 import type { Component } from 'vue'
@@ -54,14 +55,73 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 const route = useRoute()
 const router = useRouter()
 const demosStore = useDemosStore()
+const { setSEO, addStructuredData } = useSEO()
 
 const demoComponent = ref<Component | null>(null)
 const componentError = ref<string | null>(null)
 
 const demoId = computed(() => route.params.id as string)
 
+const addDemoStructuredData = (demo: IDemoApplication) => {
+  // Software Application structured data
+  const softwareData = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: demo.name,
+    description: demo.description,
+    applicationCategory: 'WebApplication',
+    operatingSystem: 'Web Browser',
+    url: window.location.href,
+    author: {
+      '@type': 'Person',
+      name: 'Full-Stack Developer'
+    },
+    programmingLanguage: demo.technologies,
+    dateCreated: new Date().toISOString().split('T')[0],
+    isAccessibleForFree: true,
+    browserRequirements: 'Modern web browser with JavaScript enabled'
+  }
+
+  // Article structured data for the demo showcase
+  const articleData = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: `${demo.name} - Interactive Demo`,
+    description: demo.description,
+    author: {
+      '@type': 'Person',
+      name: 'Full-Stack Developer'
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Personal Website'
+    },
+    datePublished: new Date().toISOString().split('T')[0],
+    dateModified: new Date().toISOString().split('T')[0],
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': window.location.href
+    },
+    articleSection: 'Technology Demo',
+    keywords: demo.technologies.join(', ')
+  }
+
+  addStructuredData([softwareData, articleData])
+}
+
 const onDemoLoaded = async (demo: IDemoApplication) => {
   console.log('Demo loaded:', demo.name)
+  
+  // Update SEO data for the specific demo
+  setSEO({
+    title: `${demo.name} - Demo - Personal Website`,
+    description: demo.description,
+    keywords: `${demo.name}, demo, ${demo.technologies.join(', ')}`,
+    type: 'article'
+  })
+
+  // Add structured data for the demo
+  addDemoStructuredData(demo)
   
   // Load the demo component dynamically
   try {
@@ -123,6 +183,7 @@ onMounted(() => {
     demosStore.loadDemos()
   }
 })
+</script>
 </script>
 
 <style scoped>

@@ -9,8 +9,10 @@ const routes: RouteRecordRaw[] = [
     name: 'home',
     component: HomeView,
     meta: {
-      title: 'Home - Personal Website',
-      description: 'Professional portfolio and demo platform showcasing full-stack development capabilities'
+      title: 'Personal Website - Full-Stack Developer Portfolio',
+      description: 'Professional portfolio showcasing full-stack development capabilities, data processing demos, and comprehensive testing practices',
+      keywords: 'developer, portfolio, Vue.js, TypeScript, testing, data processing, ELT pipeline',
+      type: 'website'
     }
   },
   {
@@ -19,7 +21,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/DemosView.vue'),
     meta: {
       title: 'Demos - Personal Website',
-      description: 'Interactive demonstrations of various technologies and development capabilities'
+      description: 'Interactive demonstrations of various technologies and development capabilities',
+      keywords: 'demos, applications, Vue.js, TypeScript, ELT pipeline, data processing',
+      type: 'website'
     }
   },
   {
@@ -28,7 +32,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/DemoDetailView.vue'),
     meta: {
       title: 'Demo Detail - Personal Website',
-      description: 'Detailed view of a specific demo application'
+      description: 'Detailed view of a specific demo application',
+      type: 'article'
     },
     beforeEnter: (to, _from, next) => {
       // Validate that the demo exists
@@ -44,6 +49,7 @@ const routes: RouteRecordRaw[] = [
       // Update meta tags with demo-specific information
       to.meta.title = `${demo.name} - Demo - Personal Website`
       to.meta.description = demo.description
+      to.meta.keywords = `${demo.name}, demo, ${demo.technologies.join(', ')}`
       
       next()
     }
@@ -54,7 +60,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/TestingView.vue'),
     meta: {
       title: 'Testing Dashboard - Personal Website',
-      description: 'Public visibility into code quality, test coverage, and testing practices'
+      description: 'Public visibility into code quality, test coverage, and testing practices',
+      keywords: 'testing, code quality, coverage, unit tests, integration tests, property-based testing',
+      type: 'website'
     }
   },
   {
@@ -63,7 +71,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/AboutView.vue'),
     meta: {
       title: 'About - Personal Website',
-      description: 'Learn more about the developer and the technologies used in this website'
+      description: 'Learn more about the developer and the technologies used in this website',
+      keywords: 'about, developer, technologies, Vue.js, TypeScript, full-stack',
+      type: 'profile'
     }
   },
   {
@@ -72,7 +82,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/NotFoundView.vue'),
     meta: {
       title: 'Page Not Found - Personal Website',
-      description: 'The requested page could not be found'
+      description: 'The requested page could not be found',
+      keywords: '404, not found, error',
+      type: 'website'
     }
   }
 ]

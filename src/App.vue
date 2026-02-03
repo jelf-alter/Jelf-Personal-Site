@@ -20,6 +20,10 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import NavigationHeader from '@/components/landing/NavigationHeader.vue'
+import { useSEO } from '@/composables/useSEO'
+
+// Initialize SEO
+const { setSEO } = useSEO()
 
 // Event handlers
 const handleMenuToggle = (isOpen: boolean) => {
