@@ -98,7 +98,7 @@ const generateSitemapData = (): SitemapUrl[] => {
   // Dynamic demo routes
   const demoRoutes: SitemapUrl[] = demoData.map(demo => ({
     url: `${baseUrl}/demos/${demo.id}`,
-    lastmod: demo.lastUpdated.toISOString().split('T')[0],
+    lastmod: demo.lastUpdated.toISOString().split('T')[0] || currentDate,
     priority: demo.featured ? '0.8' : '0.6',
     changefreq: 'monthly'
   }));

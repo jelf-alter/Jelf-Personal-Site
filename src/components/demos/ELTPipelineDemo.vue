@@ -116,6 +116,7 @@
       <PipelineVisualizer
         v-if="currentExecution"
         :execution="currentExecution"
+        :selected-step="selectedStep"
         :is-executing="isExecuting"
         @step-clicked="handleStepClick"
       />
@@ -171,10 +172,10 @@
 
     <!-- Error Recovery Panel -->
     <ErrorRecoveryPanel
-      :execution="currentExecution"
-      :show="showErrorRecovery"
+      :error="currentExecutionError"
+      :is-visible="showErrorRecovery"
       @close="showErrorRecovery = false"
-      @recovery-executed="handleRecoveryExecuted"
+      @recovery-action="handleRecoveryAction"
     />
 
     <!-- Error Display -->
@@ -202,14 +203,6 @@ import BaseButton from '../common/BaseButton.vue'
 import type { IDataset, IPipelineStep } from '@/types'
 
 // Composables
-const pipeline = useELTPipeline()
-
-// Local state
-const activeTab = ref('input')
-const selectedStep = ref<IPipelineStep | null>(null)
-const showErrorRecovery = ref(false)
-
-// Destructure pipeline composable
 const {
   sampleDatasets,
   selectedDataset,
@@ -224,24 +217,30 @@ const {
   retryExecution,
   initialize,
   cleanup
-} = pipeline
+} = useELTPipeline()
+
+// Local state
+const activeTab = ref('input')
+const selectedStep = ref<IPipelineStep | null>(null)
+const showErrorRecovery = ref(false)
 
 // Computed properties
 const dataTabs = computed(() => {
   if (!currentExecution.value) return []
 
+  const execution = currentExecution.value
   const tabs = [
     {
       id: 'input',
       label: 'Input Data',
-      data: currentExecution.value.inputDataset.sampleData,
-      count: currentExecution.value.inputDataset.sampleData?.length,
+      data: execution.inputDataset.sampleData,
+      count: execution.inputDataset.sampleData?.length,
       emptyMessage: 'No input data available'
     }
   ]
 
   // Add step data tabs
-  currentExecution.value.steps.forEach((step, index) => {
+  execution.steps.forEach((step, index) => {
     if (step.outputData) {
       tabs.push({
         id: `step-${index}`,
@@ -254,6 +253,28 @@ const dataTabs = computed(() => {
   })
 
   return tabs
+})
+
+const currentExecutionError = computed(() => {
+  if (!currentExecution.value || currentExecution.value.status !== 'failed') {
+    return null
+  }
+
+  const failedStep = currentExecution.value.steps.find(step => step.status === 'failed')
+  
+  return {
+    id: `error-${currentExecution.value.id}`,
+    message: currentExecution.value.errorMessage || failedStep?.errorMessage || 'Pipeline execution failed',
+    code: 'PIPELINE_EXECUTION_ERROR',
+    timestamp: currentExecution.value.endTime || new Date(),
+    stepId: failedStep?.id,
+    severity: 'error',
+    details: {
+      originalError: failedStep?.errorMessage,
+      retryCount: 0,
+      maxRetries: 3
+    }
+  }
 })
 
 // Methods
@@ -271,7 +292,7 @@ const handleStepClick = (step: IPipelineStep) => {
   selectedStep.value = step
   
   // Switch to the appropriate data tab
-  const stepIndex = currentExecution.value?.steps.findIndex(s => s.id === step.id)
+  const stepIndex = currentExecution?.steps.findIndex(s => s.id === step.id)
   if (stepIndex !== undefined && stepIndex >= 0) {
     activeTab.value = `step-${stepIndex}`
   }
@@ -298,11 +319,22 @@ const clearError = () => {
   console.log('Clearing error')
 }
 
-const handleRecoveryExecuted = (strategy: string, success: boolean) => {
-  console.log(`Recovery strategy ${strategy} executed with result: ${success}`)
-  if (success) {
-    showErrorRecovery.value = false
+const handleRecoveryAction = (action: string, error: any) => {
+  console.log(`Recovery action ${action} executed for error:`, error)
+  
+  switch (action) {
+    case 'retry':
+      retryExecution()
+      break
+    case 'skip':
+      // Handle skip logic if needed
+      break
+    case 'abort':
+      cancelExecution()
+      break
   }
+  
+  showErrorRecovery.value = false
 }
 
 // Watch for execution status changes to show error recovery

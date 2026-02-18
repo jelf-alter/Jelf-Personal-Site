@@ -5,9 +5,7 @@ import { useWebSocket } from './useWebSocket'
 import type { 
   IPipelineExecution, 
   IDataset, 
-  IPipelineConfig, 
-  IPipelineStep,
-  IWebSocketMessage 
+  IPipelineConfig
 } from '@/types'
 
 export function useELTPipeline() {
@@ -46,11 +44,11 @@ export function useELTPipeline() {
   }
 
   // Handle real-time pipeline updates from WebSocket
-  const handlePipelineUpdate = (message: IWebSocketMessage) => {
+  const handlePipelineUpdate = (message: any) => {
     if (message.type === 'pipeline_update' && store.currentExecution) {
-      const { stepId, progress, status, data } = message.payload
+      const { stepId, progress, status, data } = message.payload || {}
       
-      const step = store.currentExecution.steps.find(s => s.id === stepId)
+      const step = store.currentExecution.steps.find((s: any) => s.id === stepId)
       if (step) {
         step.progress = progress || step.progress
         step.status = status || step.status
@@ -115,7 +113,7 @@ export function useELTPipeline() {
   const getStepDetails = (stepId: string) => {
     if (!store.currentExecution) return null
     
-    const step = store.currentExecution.steps.find(s => s.id === stepId)
+    const step = store.currentExecution.steps.find((s: any) => s.id === stepId)
     if (!step) return null
 
     return {
@@ -136,8 +134,8 @@ export function useELTPipeline() {
     if (!store.currentExecution) return null
 
     const execution = store.currentExecution
-    const completedSteps = execution.steps.filter(s => s.status === 'completed').length
-    const failedSteps = execution.steps.filter(s => s.status === 'failed').length
+    const completedSteps = execution.steps.filter((s: any) => s.status === 'completed').length
+    const failedSteps = execution.steps.filter((s: any) => s.status === 'failed').length
     const totalSteps = execution.steps.length
 
     return {
@@ -204,13 +202,13 @@ export function useELTPipeline() {
     selectedDataset,
     customConfig,
     
-    // Store state (reactive)
-    pipelines: store.pipelines,
-    currentExecution: store.currentExecution,
-    isExecuting: store.isExecuting,
-    executionHistory: store.executionHistory,
-    error: store.error,
-    sampleDatasets: store.sampleDatasets,
+    // Store state (reactive) - ensure proper reactivity
+    pipelines: computed(() => store.pipelines),
+    currentExecution: computed(() => store.currentExecution),
+    isExecuting: computed(() => store.isExecuting),
+    executionHistory: computed(() => store.executionHistory),
+    error: computed(() => store.error),
+    sampleDatasets: computed(() => store.sampleDatasets),
     
     // Computed
     activePipeline: store.activePipeline,

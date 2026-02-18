@@ -312,7 +312,7 @@ describe('Comprehensive API Integration Tests', () => {
       const pipelineId = 'test-pipeline';
       const invalidResponse = await request(app)
         .post(`/api/ws/pipeline/${pipelineId}/update`)
-        .send(null)
+        .send(undefined)
         .expect(400);
 
       expect(invalidResponse.body.error).toBe('Invalid update data');
@@ -625,7 +625,9 @@ describe('Comprehensive API Integration Tests', () => {
       // If rate limiting is triggered, check error structure
       if (rateLimitedRequests.length > 0) {
         const rateLimitedResponse = rateLimitedRequests[0];
-        expect(rateLimitedResponse.body).toHaveProperty('error');
+        if (rateLimitedResponse) {
+          expect(rateLimitedResponse.body).toHaveProperty('error');
+        }
       }
     });
 
@@ -724,7 +726,7 @@ describe('Comprehensive API Integration Tests', () => {
       const invalidRequests = [
         {
           endpoint: '/api/ws/pipeline/test/update',
-          data: null,
+          data: undefined,
           expectedStatus: 400
         },
         {
