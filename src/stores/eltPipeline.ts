@@ -31,8 +31,23 @@ export const useELTPipelineStore = defineStore('eltPipeline', () => {
 
   const executionProgress = computed(() => {
     if (!currentExecution.value) return 0
-    const completedSteps = currentExecution.value.steps.filter(s => s.status === 'completed').length
-    return (completedSteps / currentExecution.value.steps.length) * 100
+    
+    const steps = currentExecution.value.steps
+    const totalSteps = steps.length
+    
+    // Calculate progress including partial progress of running steps
+    let totalProgress = 0
+    
+    for (const step of steps) {
+      if (step.status === 'completed') {
+        totalProgress += 100
+      } else if (step.status === 'running') {
+        totalProgress += step.progress || 0
+      }
+      // Pending and failed steps contribute 0
+    }
+    
+    return Math.round(totalProgress / totalSteps)
   })
 
   const lastExecution = computed(() => 

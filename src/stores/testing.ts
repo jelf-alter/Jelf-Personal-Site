@@ -357,7 +357,8 @@ export const useTestingStore = defineStore('testing', () => {
   }
 
   // Mock test execution function (unused but kept for potential future use)
-  // const _mockTestExecution = async (suiteId?: string) => {
+  /*
+  const _mockTestExecution = async (suiteId?: string) => {
     // Simulate test execution time
     await new Promise(resolve => setTimeout(resolve, 2000))
     
@@ -428,6 +429,7 @@ export const useTestingStore = defineStore('testing', () => {
     testSuites.value = testMetricsService.getAllTestSuites()
     lastUpdated.value = now
   }
+  */
 
   const getTestSuiteById = (id: string) => {
     return testMetricsService.getTestSuite(id)

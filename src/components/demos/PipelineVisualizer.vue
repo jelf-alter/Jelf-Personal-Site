@@ -293,8 +293,9 @@ import type { IPipelineExecution, IPipelineStep } from '@/types'
 
 // Props
 interface Props {
-  pipelineSteps: IPipelineStep[]
-  currentStep?: string
+  execution: IPipelineExecution
+  selectedStep?: IPipelineStep | null
+  isExecuting?: boolean
 }
 
 const props = defineProps<Props>()
@@ -315,7 +316,7 @@ const stepWidth = 120
 const stepHeight = 80
 
 // Computed properties
-const steps = computed(() => props.pipelineSteps || [])
+const steps = computed(() => props.execution?.steps || [])
 
 const stepPositions = computed(() => {
   const totalSteps = steps.value.length
@@ -485,7 +486,7 @@ const formatTime = (date: Date) => {
 
 // Watch for execution changes to show data flow animation
 watch(
-  () => props.currentStep,
+  () => props.execution?.steps.find(step => step.status === 'running'),
   (currentStep) => {
     showDataFlow.value = !!currentStep
   }
